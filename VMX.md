@@ -80,8 +80,10 @@ Configuration names differ so both targets can coexist: `vmxDebug` / `vmxRelease
   Natives built with the trixie toolchain, including the published `linuxarm64` WPILib natives, are expected
   not to load there (newer glibc/libstdc++ symbol versions). Unverified on hardware. This must be solved
   (newer OS on the VMX, own sysroot, or building on the device) before this target is usable.
-- **`libhalsim_vmx.so` cannot be cross-built with the Studica backend** because the VMX headers
-  (`VMXPi.h`) are only on the VMX image. A plugin boundary (backend loaded with dlopen) is needed.
+- `libhalsim_vmx.so` (cross-buildable, no VMX headers) loads the Studica backend as a plugin through
+  `HALSIMVMX_BACKEND=<path to libhalsim_vmx_studica.so>`; the plugin must be built once on the VMX itself
+  (see allwpilib `simulation/halsim_vmx/DESIGN.md`). Set it with `environment.put('HALSIMVMX_BACKEND', ...)`.
+  Neither library is published to Maven yet.
 - The C++ artifact (`WPILibNativeArtifact`) is written but only registration is tested; it has not been used with a real
   `NativeExecutableSpec` build. aarch64 cross-compilation is enabled for C++ projects (needs the arm64 toolchain download).
 - Debug (`debug = true`) adds a JDWP agent only; no gdbserver flow.
