@@ -75,7 +75,10 @@ Configuration names differ so both targets can coexist: `vmxDebug` / `vmxRelease
 
 ## Known risks / not done
 
-- **glibc.** The only published arm64 desktop toolchain is `aarch64-trixie-linux-gnu` (Debian 13, GCC 14.3;
+- **glibc (likely resolved for the development robot, not yet verified with the real libraries).** The development VMX runs
+  Ubuntu 26.04.1 with glibc 2.43, which is newer than the toolchain's 2.41, so the published `linuxarm64` natives are expected to load.
+  Run the `ldd`/`objdump` check in `HARDWARE_CHECKLIST.md` section 5 to confirm. For an Ubuntu 22.04 VMX the original text below still applies.
+  The only published arm64 desktop toolchain is `aarch64-trixie-linux-gnu` (Debian 13, GCC 14.3;
   OpenSDK has no older-glibc arm64 option). The Studica VMX image is documented as Ubuntu 22.04 (glibc 2.35).
   Natives built with the trixie toolchain, including the published `linuxarm64` WPILib natives, are expected
   not to load there (newer glibc/libstdc++ symbol versions). Unverified on hardware. This must be solved
