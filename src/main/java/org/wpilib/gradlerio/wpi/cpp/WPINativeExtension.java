@@ -103,6 +103,8 @@ public class WPINativeExtension {
 
         NativeUtilsExtension nte = project.getExtensions().getByType(NativeUtilsExtension.class);
         nte.withCrossSystemCore();
+        // Studica VMX-pi runs linuxarm64 (optional: only used when the cross toolchain is available)
+        nte.withCrossLinuxArm64();
         nte.addWpiNativeUtils();
 
         deps = project.getObjects().newInstance(WPINativeDepsExtension.class, nte);

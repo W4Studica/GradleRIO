@@ -20,6 +20,7 @@ import org.wpilib.gradlerio.deploy.systemcore.RobotProgramKillArtifact;
 import org.wpilib.gradlerio.deploy.systemcore.RobotProgramStartArtifact;
 import org.wpilib.gradlerio.deploy.systemcore.SystemCore;
 import org.wpilib.deployutils.deploy.NamedObjectFactory;
+import org.wpilib.gradlerio.deploy.vmx.VmxDeployRegistration;
 
 public class WPILibDeployPlugin implements Plugin<Project> {
 
@@ -61,6 +62,9 @@ public class WPILibDeployPlugin implements Plugin<Project> {
             configureSystemCoreTypes(target);
             return target;
         });
+
+        // Register the Studica VMX-pi target
+        VmxDeployRegistration.register(project, deployExtension, firstExtension);
     }
 
     public Project getProject() {
