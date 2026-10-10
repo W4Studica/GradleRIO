@@ -75,7 +75,10 @@ Configuration names differ so both targets can coexist: `vmxDebug` / `vmxRelease
 
 ## Known risks / not done
 
-- **glibc (likely resolved for the development robot, not yet verified with the real libraries).** The development VMX runs
+- **glibc (resolved on paper for the development robot; measured on the published library).** `libwpiHal.so` from `org.wpilib.hal:hal-cpp:2027.0.0-alpha-7:linuxarm64`
+  needs at most `GLIBC_2.34` and `GLIBCXX_3.4.31` (not the 2.41 of the toolchain), and it is the simulation HAL (460 `HALSIM_*` symbols). Ubuntu 22.04 would pass the glibc
+  check but its libstdc++ (GCC 12) lacks `GLIBCXX_3.4.31`. Other WPILib libraries were not checked, and nothing was run on the robot with them.
+- (older note, kept for context) The development VMX runs
   Ubuntu 26.04.1 with glibc 2.43, which is newer than the toolchain's 2.41, so the published `linuxarm64` natives are expected to load.
   Run the `ldd`/`objdump` check in `HARDWARE_CHECKLIST.md` section 5 to confirm. For an Ubuntu 22.04 VMX the original text below still applies.
   The only published arm64 desktop toolchain is `aarch64-trixie-linux-gnu` (Debian 13, GCC 14.3;
