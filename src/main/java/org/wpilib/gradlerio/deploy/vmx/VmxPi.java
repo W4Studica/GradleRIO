@@ -1,5 +1,7 @@
 package org.wpilib.gradlerio.deploy.vmx;
 
+import java.io.File;
+
 import javax.inject.Inject;
 
 import org.gradle.api.GradleException;
@@ -46,6 +48,28 @@ public class VmxPi extends WPIRemoteTarget {
 
         getArtifacts().add(programKillArtifact);
         getArtifacts().add(programStartArtifact);
+
+        // Copies what only the robot has (VMXPi.h, libvmxpi_hal_cpp.so, the Studica backend plugin) so C++ cross-builds.
+        project.getTasks().register("fetchVmxSdk" + name, FetchVmxSdkTask.class, this).configure(task -> {
+            task.getSdkDirectory().set(project.getLayout().getBuildDirectory().dir("vmxsdk" + name));
+            task.getRemotePaths().convention(DEFAULT_SDK_PATHS);
+            task.getPort().convention(22);
+        });
+    }
+
+    /** Where the robot keeps what a C++ build needs: headers, the VMX HAL and the Studica backend plugin. */
+    public static final java.util.List<String> DEFAULT_SDK_PATHS = java.util.List.of(
+            "/usr/local/include/vmxpi",
+            "/usr/local/lib/vmxpi/libvmxpi_hal_cpp.so",
+            "/opt/halsim_vmx/libhalsim_vmx_studica.so");
+
+    /**
+     * Location of a robot file after {@code fetchVmxSdk<name>}: {@code sdkPath("/usr/local/include/vmxpi")}
+     * is the directory to pass as an include path.
+     */
+    public File sdkPath(String remotePath) {
+        return new File(getProject().getLayout().getBuildDirectory().dir("vmxsdk" + getName()).get().getAsFile(),
+                remotePath.startsWith("/") ? remotePath.substring(1) : remotePath);
     }
 
     public RobotProgramKillArtifact getProgramKillArtifact() {

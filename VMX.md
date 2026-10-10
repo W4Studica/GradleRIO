@@ -46,6 +46,22 @@ dependencies {
 Directories (derived from `username`): `/home/<u>`, `/home/<u>/wpilib/classpath`,
 `/home/<u>/wpilib/third-party/lib`.
 
+## Fetching what only the robot has (C++)
+
+A C++ program needs `VMXPi.h`, `libvmxpi_hal_cpp.so` and, to share the `VMXPi` with `halsim_vmx`, the Studica backend
+plugin. None of them can be downloaded; they live on the robot. `./gradlew fetchVmx<SdkTarget>` (for a target named `vmx`:
+`fetchVmxSdkvmx`) copies them over the same SSH login and address the deploy uses (SFTP, no extra tools) into
+`build/vmxsdk<target>/`, keeping their paths:
+
+```groovy
+def vmxHeaders = deploy.targets.vmx.sdkPath('/usr/local/include/vmxpi')
+def vmxHal     = deploy.targets.vmx.sdkPath('/usr/local/lib/vmxpi/libvmxpi_hal_cpp.so')
+```
+
+`remotePaths` (default: the three paths above; directories are copied recursively) and `port` (default 22) can be set on the
+task. The server key is accepted without checking, like the deploy does. Run it once per robot image; the build itself is
+offline afterwards.
+
 ## Same names as 2027 (SystemCore)
 
 The VMX classes use the **same simple class names** as the SystemCore ones, because
