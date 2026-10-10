@@ -29,8 +29,8 @@ public class VmxPi extends WPIRemoteTarget {
     private String password;
     private String serviceName = DEFAULT_SERVICE_NAME;
 
-    private final VmxProgramKillArtifact programKillArtifact;
-    private final VmxProgramStartArtifact programStartArtifact;
+    private final RobotProgramKillArtifact programKillArtifact;
+    private final RobotProgramStartArtifact programStartArtifact;
 
     @Inject
     public VmxPi(String name, Project project, DeployExtension de, WPILibExtension firstExtension) {
@@ -39,8 +39,8 @@ public class VmxPi extends WPIRemoteTarget {
         setMaxChannels(4);
         setTimeout(7);
 
-        programKillArtifact = project.getObjects().newInstance(VmxProgramKillArtifact.class, "programKill" + name, this);
-        programStartArtifact = project.getObjects().newInstance(VmxProgramStartArtifact.class, "programStart" + name, this);
+        programKillArtifact = project.getObjects().newInstance(RobotProgramKillArtifact.class, "programKill" + name, this);
+        programStartArtifact = project.getObjects().newInstance(RobotProgramStartArtifact.class, "programStart" + name, this);
 
         getTargetPlatform().set(NativePlatforms.linuxarm64);
 
@@ -48,11 +48,11 @@ public class VmxPi extends WPIRemoteTarget {
         getArtifacts().add(programStartArtifact);
     }
 
-    public VmxProgramKillArtifact getProgramKillArtifact() {
+    public RobotProgramKillArtifact getProgramKillArtifact() {
         return programKillArtifact;
     }
 
-    public VmxProgramStartArtifact getProgramStartArtifact() {
+    public RobotProgramStartArtifact getProgramStartArtifact() {
         return programStartArtifact;
     }
 

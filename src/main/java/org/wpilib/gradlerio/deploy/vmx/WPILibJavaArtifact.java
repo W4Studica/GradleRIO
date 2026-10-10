@@ -26,10 +26,10 @@ import org.wpilib.gradlerio.deploy.systemcore.GarbageCollectorType;
  * hardware extension(s) listed in {@link #getHalsimExtensions()} through
  * HALSIM_EXTENSIONS.
  */
-public class VmxJavaArtifact extends DebuggableJavaArtifact {
+public class WPILibJavaArtifact extends DebuggableJavaArtifact {
 
-    private final VmxRobotCommandArtifact robotCommandArtifact;
-    private final VmxJNILibraryArtifact nativeZipArtifact;
+    private final RobotCommandArtifact robotCommandArtifact;
+    private final WPILibJNILibraryArtifact nativeZipArtifact;
 
     private final List<String> jvmArgs = new ArrayList<>();
     private final List<String> arguments = new ArrayList<>();
@@ -53,7 +53,7 @@ public class VmxJavaArtifact extends DebuggableJavaArtifact {
     }
 
     @Inject
-    public VmxJavaArtifact(String name, VmxPi target) {
+    public WPILibJavaArtifact(String name, VmxPi target) {
         super(name, target);
         vmx = target;
         debugJni = target.getProject().getObjects().property(Boolean.class);
@@ -74,7 +74,7 @@ public class VmxJavaArtifact extends DebuggableJavaArtifact {
         this.getDirectory().set(target.getProject().provider(vmx::getClasspathDirectory));
         this.getDeleteOldFiles().set(true);
 
-        robotCommandArtifact = target.getArtifacts().create("robotCommand" + name, VmxRobotCommandArtifact.class, art -> {
+        robotCommandArtifact = target.getArtifacts().create("robotCommand" + name, RobotCommandArtifact.class, art -> {
             art.setRobotCommandFunc(this::generateStartCommand);
             art.setArgFileFunc(this::generateArgFile);
             art.dependsOn(getJarProvider());
@@ -82,7 +82,7 @@ public class VmxJavaArtifact extends DebuggableJavaArtifact {
             art.dependsOn(this.getDeployTask());
         });
 
-        nativeZipArtifact = target.getArtifacts().create("nativeZips" + name, VmxJNILibraryArtifact.class, artifact -> {
+        nativeZipArtifact = target.getArtifacts().create("nativeZips" + name, WPILibJNILibraryArtifact.class, artifact -> {
             target.setDeployStage(artifact, DeployStage.FileDeploy);
 
             var cbl = target.getProject().getProviders().provider(() -> {
@@ -123,11 +123,11 @@ public class VmxJavaArtifact extends DebuggableJavaArtifact {
         this.mainClass.set(javaApplication.getMainClass());
     }
 
-    public VmxRobotCommandArtifact getRobotCommandArtifact() {
+    public RobotCommandArtifact getRobotCommandArtifact() {
         return robotCommandArtifact;
     }
 
-    public VmxJNILibraryArtifact getNativeZipArtifact() {
+    public WPILibJNILibraryArtifact getNativeZipArtifact() {
         return nativeZipArtifact;
     }
 
@@ -205,7 +205,7 @@ public class VmxJavaArtifact extends DebuggableJavaArtifact {
         builder.append(javaCommand);
 
         builder.append(" @");
-        builder.append(PathUtils.combine(ctx.getWorkingDir(), VmxRobotCommandArtifact.ARG_FILE));
+        builder.append(PathUtils.combine(ctx.getWorkingDir(), RobotCommandArtifact.ARG_FILE));
 
         return builder.toString();
     }

@@ -25,10 +25,13 @@ public final class VmxDeployRegistration {
         ObjectFactory objects = target.getProject().getObjects();
         ExtensiblePolymorphicDomainObjectContainer<Artifact> artifacts = target.getArtifacts();
 
-        NamedObjectFactory.registerType(VmxJavaArtifact.class, artifacts, target, objects);
-        NamedObjectFactory.registerType(VmxJNILibraryArtifact.class, artifacts, target, objects);
-        NamedObjectFactory.registerType(VmxRobotCommandArtifact.class, artifacts, target, objects);
-        NamedObjectFactory.registerType(VmxProgramKillArtifact.class, artifacts, target, objects);
-        NamedObjectFactory.registerType(VmxProgramStartArtifact.class, artifacts, target, objects);
+        // Same simple class names as the SystemCore artifacts, so a build.gradle's
+        // getArtifactTypeClass('WPILibJavaArtifact') etc. works unchanged on a VmxPi target.
+        NamedObjectFactory.registerType(WPILibJavaArtifact.class, artifacts, target, objects);
+        NamedObjectFactory.registerType(WPILibNativeArtifact.class, artifacts, target, objects);
+        NamedObjectFactory.registerType(WPILibJNILibraryArtifact.class, artifacts, target, objects);
+        NamedObjectFactory.registerType(RobotCommandArtifact.class, artifacts, target, objects);
+        NamedObjectFactory.registerType(RobotProgramKillArtifact.class, artifacts, target, objects);
+        NamedObjectFactory.registerType(RobotProgramStartArtifact.class, artifacts, target, objects);
     }
 }

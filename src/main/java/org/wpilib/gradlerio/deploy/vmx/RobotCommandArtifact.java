@@ -16,7 +16,7 @@ import org.wpilib.gradlerio.deploy.StagedDeployTarget;
  * Writes the robotCommand (and optional robotCommand.args) that robot_manager
  * runs, as root. Unlike the SystemCore version, no chown to a robot user is done.
  */
-public class VmxRobotCommandArtifact extends CommandArtifact {
+public class RobotCommandArtifact extends CommandArtifact {
 
     public static final String ROBOT_COMMAND_FILE = "robotCommand";
     public static final String ARG_FILE = "robotCommand.args";
@@ -25,7 +25,7 @@ public class VmxRobotCommandArtifact extends CommandArtifact {
     private Function<DeployContext, String> argFileFunc;
 
     @Inject
-    public VmxRobotCommandArtifact(String name, StagedDeployTarget target) {
+    public RobotCommandArtifact(String name, StagedDeployTarget target) {
         super(name, target);
 
         target.setDeployStage(this, DeployStage.FileDeploy);

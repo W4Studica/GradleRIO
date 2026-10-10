@@ -6,12 +6,12 @@ import org.wpilib.deployutils.deploy.artifact.AbstractArtifact;
 import org.wpilib.deployutils.deploy.context.DeployContext;
 import org.wpilib.gradlerio.deploy.DeployStage;
 
-public class VmxProgramStartArtifact extends AbstractArtifact {
+public class RobotProgramStartArtifact extends AbstractArtifact {
 
     private final VmxPi vmx;
 
     @Inject
-    public VmxProgramStartArtifact(String name, VmxPi target) {
+    public RobotProgramStartArtifact(String name, VmxPi target) {
         super(name, target);
         vmx = target;
 

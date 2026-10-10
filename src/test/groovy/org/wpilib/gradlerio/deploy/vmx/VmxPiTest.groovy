@@ -41,7 +41,7 @@ deploy {
             addAddress('vmx.local')
 
             artifacts {
-                wpilibJava(getArtifactTypeClass('VmxJavaArtifact')) {
+                wpilibJava(getArtifactTypeClass('WPILibJavaArtifact')) {
                 }
             }
         }
@@ -147,7 +147,7 @@ deploy {
             addAddress('vmx.local')
 
             artifacts {
-                wpilibJava(getArtifactTypeClass('VmxJavaArtifact')) {
+                wpilibJava(getArtifactTypeClass('WPILibJavaArtifact')) {
                     halsimExtensions.add('/opt/other/libext.so')
                     environment.put('HALSIMVMX_IMU', '1')
                 }
@@ -174,5 +174,63 @@ tasks.register('showJava') {
         result.output.contains('ENV=[HALSIMVMX_IMU:1]')
         result.output.contains('HAS_RELEASE=true')
         result.output.contains('HAS_DEBUG=true')
+    }
+
+    def "VmxPi uses the same artifact type names and artifact names as SystemCore"() {
+        given:
+        buildFile << """
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.wpilib.GradleRIO'
+}
+
+deploy {
+    targets {
+        systemcore(getTargetTypeClass('SystemCore')) {
+            addAddress('robot.local')
+            artifacts {
+                wpilibJava(getArtifactTypeClass('WPILibJavaArtifact')) { }
+            }
+        }
+        vmx(getTargetTypeClass('VmxPi')) {
+            username = 'tester'
+            password = 'secret'
+            addAddress('vmx.local')
+            artifacts {
+                wpilibJava(getArtifactTypeClass('WPILibJavaArtifact')) { }
+            }
+        }
+    }
+}
+
+tasks.register('showTypes') {
+    doLast {
+        def names = { t -> t.artifacts.names.sort() }
+        println "SC=" + names(deploy.targets.systemcore)
+        println "VMX=" + names(deploy.targets.vmx)
+        ['WPILibJavaArtifact', 'WPILibNativeArtifact', 'WPILibJNILibraryArtifact', 'RobotCommandArtifact',
+         'RobotProgramKillArtifact', 'RobotProgramStartArtifact'].each { n ->
+            println "TYPE " + n + "=" + deploy.targets.vmx.getArtifactTypeClass(n).name
+            println "SCTYPE " + n + "=" + deploy.targets.systemcore.getArtifactTypeClass(n).name
+        }
+    }
+}
+"""
+        when:
+        def result = run('showTypes')
+        def out = result.output
+
+        then:
+        result.task(':showTypes').outcome == SUCCESS
+        // same artifact instance names on both targets (only the target name inside them differs)
+        def sc = (out =~ /SC=\[(.*)\]/)[0][1]
+        def vmx = (out =~ /VMX=\[(.*)\]/)[0][1]
+        sc.replace('systemcore', 'TARGET') == vmx.replace('vmx', 'TARGET')
+        out.contains('TYPE WPILibJavaArtifact=org.wpilib.gradlerio.deploy.vmx.WPILibJavaArtifact')
+        out.contains('TYPE WPILibNativeArtifact=org.wpilib.gradlerio.deploy.vmx.WPILibNativeArtifact')
+        out.contains('TYPE RobotProgramKillArtifact=org.wpilib.gradlerio.deploy.vmx.RobotProgramKillArtifact')
+        out.contains('SCTYPE WPILibJavaArtifact=org.wpilib.gradlerio.deploy.systemcore.WPILibJavaArtifact')
+        out.contains('SCTYPE RobotProgramStartArtifact=org.wpilib.gradlerio.deploy.systemcore.RobotProgramStartArtifact')
     }
 }

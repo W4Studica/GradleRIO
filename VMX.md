@@ -22,7 +22,7 @@ deploy {
             addAddress('<host or ip>')
 
             artifacts {
-                wpilibJava(getArtifactTypeClass('VmxJavaArtifact')) {
+                wpilibJava(getArtifactTypeClass('WPILibJavaArtifact')) {
                     // halsimExtensions defaults to ['libhalsim_vmx.so'] (relative to the library dir)
                     environment.put('HALSIMVMX_DIO_MAP', '0:12,1:13')
                     environment.put('HALSIMVMX_IMU', '1')
@@ -46,10 +46,29 @@ dependencies {
 Directories (derived from `username`): `/home/<u>`, `/home/<u>/wpilib/classpath`,
 `/home/<u>/wpilib/third-party/lib`.
 
+## Same names as 2027 (SystemCore)
+
+The VMX classes use the **same simple class names** as the SystemCore ones, because
+`getArtifactTypeClass(name)` resolves by simple name per target. A `build.gradle` written for SystemCore
+therefore works on a `VmxPi` by changing only the target type (and the platform/configuration names).
+
+| 2027 SystemCore | VmxPi (`deploy/vmx/`) |
+|---|---|
+| `WPILibJavaArtifact` | same name, runs on desktop HAL + `HALSIM_EXTENSIONS` |
+| `WPILibNativeArtifact` | same name (C++), no chown/setcap, no gdb flow yet |
+| `WPILibJNILibraryArtifact` | same name, deploys linuxarm64 libraries |
+| `RobotCommandArtifact` | same name, writes `robotCommand` / `robotCommand.args`, no chown |
+| `RobotProgramKillArtifact` | same name (`programKill<target>`), `systemctl stop <service>` |
+| `RobotProgramStartArtifact` | same name (`programStart<target>`), `systemctl enable/start <service>` |
+
+Intentionally not ported: `FirstDsDeployLocation` / `NiDsDeployLocation` and the DS exceptions (robot discovery
+through a Driver Station; MockDS is user code here) and `WPILibNativeLibraryArtifact` (an empty stub upstream).
+Configuration names differ so both targets can coexist: `vmxDebug` / `vmxRelease` instead of `systemcoreDebug` / `systemcoreRelease`.
+
 ## What the VMX must provide
 
 - A `robot_manager` systemd service that runs `/home/<u>/robotCommand` **as root** (the VMX HAL uses pigpio).
-  It does not exist yet (see `../robot_manager/`).
+  `robotCommand` is the contract, same as 2027. The service does not exist yet (see `../robot_manager/`).
 - Passwordless `sudo` for the SSH user for `systemctl` and `ldconfig`.
 - A Java runtime at `/usr/bin/java` (see `javaCommand`).
 - `libhalsim_vmx.so` for aarch64 in the library directory. Not published anywhere yet.
@@ -63,7 +82,7 @@ Directories (derived from `username`): `/home/<u>`, `/home/<u>/wpilib/classpath`
   (newer OS on the VMX, own sysroot, or building on the device) before this target is usable.
 - **`libhalsim_vmx.so` cannot be cross-built with the Studica backend** because the VMX headers
   (`VMXPi.h`) are only on the VMX image. A plugin boundary (backend loaded with dlopen) is needed.
-- No C++ artifact (`WPILibNativeArtifact` equivalent) yet. aarch64 cross-compilation is enabled for C++ projects,
-  but nothing deploys a C++ robot program to a `VmxPi`.
+- The C++ artifact (`WPILibNativeArtifact`) is written but only registration is tested; it has not been used with a real
+  `NativeExecutableSpec` build. aarch64 cross-compilation is enabled for C++ projects (needs the arm64 toolchain download).
 - Debug (`debug = true`) adds a JDWP agent only; no gdbserver flow.
 - Nothing here has been run against a real VMX-pi.

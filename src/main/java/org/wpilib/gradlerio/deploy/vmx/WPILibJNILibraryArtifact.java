@@ -16,14 +16,14 @@ import org.wpilib.deployutils.deploy.artifact.FileCollectionArtifact;
 import org.wpilib.deployutils.deploy.context.DeployContext;
 
 /** Deploys native libraries (JNI zips for linuxarm64) to the VMX library directory. */
-public class VmxJNILibraryArtifact extends FileCollectionArtifact {
+public class WPILibJNILibraryArtifact extends FileCollectionArtifact {
     private final Property<Configuration> configuration;
     private boolean zipped;
     private final PatternFilterable filter;
     private final VmxPi vmx;
 
     @Inject
-    public VmxJNILibraryArtifact(String name, VmxPi target) {
+    public WPILibJNILibraryArtifact(String name, VmxPi target) {
         super(name, target);
         vmx = target;
 
