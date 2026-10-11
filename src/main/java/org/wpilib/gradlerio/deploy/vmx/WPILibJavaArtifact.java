@@ -186,10 +186,21 @@ public class WPILibJavaArtifact extends DebuggableJavaArtifact {
     /** HALSIM_EXTENSIONS value: absolute library paths separated by ':' (Linux). */
     String extensionString() {
         List<String> paths = new ArrayList<>();
-        for (String ext : halsimExtensions) {
+        // Elements may be Groovy GStrings ("${dir}/x.so"), which are not Strings: go through String.valueOf.
+        for (Object element : (List<?>) halsimExtensions) {
+            String ext = String.valueOf(element);
             paths.add(ext.startsWith("/") ? ext : PathUtils.combine(vmx.getLibraryDirectory(), ext));
         }
         return String.join(":", paths);
+    }
+
+    /** NAME="value" pairs for the robot command, each followed by a space. Values may be Groovy GStrings. */
+    String environmentString() {
+        StringBuilder builder = new StringBuilder();
+        for (Map.Entry<?, ?> entry : ((Map<?, ?>) environment).entrySet()) {
+            builder.append(entry.getKey()).append("=\"").append(entry.getValue()).append("\" ");
+        }
+        return builder.toString();
     }
 
     String generateStartCommand(DeployContext ctx) {
@@ -198,9 +209,7 @@ public class WPILibJavaArtifact extends DebuggableJavaArtifact {
         if (!halsimExtensions.isEmpty()) {
             builder.append("HALSIM_EXTENSIONS=\"").append(extensionString()).append("\" ");
         }
-        for (Map.Entry<String, String> entry : environment.entrySet()) {
-            builder.append(entry.getKey()).append("=\"").append(entry.getValue()).append("\" ");
-        }
+        builder.append(environmentString());
 
         builder.append(javaCommand);
 

@@ -233,4 +233,56 @@ tasks.register('showTypes') {
         out.contains('SCTYPE WPILibJavaArtifact=org.wpilib.gradlerio.deploy.systemcore.WPILibJavaArtifact')
         out.contains('SCTYPE RobotProgramStartArtifact=org.wpilib.gradlerio.deploy.systemcore.RobotProgramStartArtifact')
     }
+
+    def "Groovy GStrings work in environment and halsimExtensions of both artifacts"() {
+        given:
+        buildFile << """
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.wpilib.GradleRIO'
+}
+
+def dir = '/opt/gstring'
+deploy {
+    targets {
+        vmx(getTargetTypeClass('VmxPi')) {
+            username = 'tester'
+            password = 'secret'
+            addAddress('vmx.local')
+
+            artifacts {
+                wpilibJava(getArtifactTypeClass('WPILibJavaArtifact')) {
+                    halsimExtensions.add("\${dir}/libext.so")
+                    environment.put('A', "\${dir}/value")
+                }
+                wpilibCpp(getArtifactTypeClass('WPILibNativeArtifact')) {
+                    halsimExtensions.add("\${dir}/libext.so")
+                    environment.put('B', "\${dir}/value")
+                }
+            }
+        }
+    }
+}
+
+tasks.register('showGString') {
+    doLast {
+        def j = deploy.targets.vmx.artifacts.wpilibJava
+        def c = deploy.targets.vmx.artifacts.wpilibCpp
+        println "JEXT=" + j.extensionString()
+        println "JENV=" + j.environmentString()
+        println "CEXT=" + c.extensionString()
+        println "CENV=" + c.environmentString()
+    }
+}
+"""
+        when:
+        def result = run('showGString')
+
+        then:
+        result.output.contains('JEXT=/home/tester/wpilib/third-party/lib/libhalsim_vmx.so:/opt/gstring/libext.so')
+        result.output.contains('JENV=A="/opt/gstring/value" ')
+        result.output.contains('CEXT=/home/tester/wpilib/third-party/lib/libhalsim_vmx.so:/opt/gstring/libext.so')
+        result.output.contains('CENV=B="/opt/gstring/value" ')
+    }
 }
