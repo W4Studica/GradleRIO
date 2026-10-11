@@ -19,7 +19,8 @@ What runs where:
 3. **PC, once**: `./gradlew installArm64Toolchain` (downloads the `aarch64-trixie` cross compiler, about 400 MB).
 4. **Robot address**: nothing to set if the robot has the image's default team number (1234) and the PC is on its cable or on its Wi-Fi
    `VMX-1234`: the deploy tries the wired port (`172.22.11.2`) and the Wi-Fi access point (`10.12.34.2`) and uses the one that answers.
-   Another team number: `export VMX_TEAM=4444` (or `-PvmxTeam=4444`), which means `10.44.44.2`. A specific address or name:
+   The team number is the WPILib setting: `.wpilib/wpilib_preferences.json` (`"teamNumber"`, VS Code's "Set Team Number" writes it),
+   or `-PteamNumber=4444`, which means `10.44.44.2`. (`VMX_TEAM=4444` overrides both.) A specific address or name:
    `export VMX_HOST=<ip or name>`. The login is `ubuntu` / `password` (the image default); change it with `VMX_USER` and
    `VMX_PASSWORD`. `GradleRIO` does not store it anywhere.
 5. **PC, once per robot image**: `./gradlew fetchVmxSdkvmx` (copies `VMXPi.h` and `libvmxpi_hal_cpp.so` from the robot).
