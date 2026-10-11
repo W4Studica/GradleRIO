@@ -29,8 +29,7 @@ import org.wpilib.deployutils.deploy.target.location.DeployLocation;
 import org.wpilib.deployutils.deploy.target.location.SshDeployLocation;
 
 /**
- * Copies the files a VMX-pi build needs but only the robot has (VMXPi.h, libvmxpi_hal_cpp.so, the Studica backend
- * plugin) from the robot into the SDK directory, over the same SSH account and address the deploy uses. After that a
+ * Copies the files a VMX-pi build needs but only the robot has (VMXPi.h, libvmxpi_hal_cpp.so) from the robot into the SDK directory, over the same SSH account and address the deploy uses. After that a
  * C++ program cross-compiles on the PC. Files keep their place relative to the filesystem root: a remote
  * /usr/local/lib/vmxpi/libvmxpi_hal_cpp.so lands in {@code <sdk>/usr/local/lib/vmxpi/libvmxpi_hal_cpp.so}; see
  * {@link VmxPi#sdkPath(String)}.

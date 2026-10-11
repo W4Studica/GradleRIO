@@ -49,7 +49,7 @@ public class VmxPi extends WPIRemoteTarget {
         getArtifacts().add(programKillArtifact);
         getArtifacts().add(programStartArtifact);
 
-        // Copies what only the robot has (VMXPi.h, libvmxpi_hal_cpp.so, the Studica backend plugin) so C++ cross-builds.
+        // Copies what only the robot has (VMXPi.h, libvmxpi_hal_cpp.so) so C++ cross-builds.
         project.getTasks().register("fetchVmxSdk" + name, FetchVmxSdkTask.class, this).configure(task -> {
             task.getSdkDirectory().set(project.getLayout().getBuildDirectory().dir("vmxsdk" + name));
             task.getRemotePaths().convention(DEFAULT_SDK_PATHS);
@@ -57,11 +57,13 @@ public class VmxPi extends WPIRemoteTarget {
         });
     }
 
-    /** Where the robot keeps what a C++ build needs: headers, the VMX HAL and the Studica backend plugin. */
+    /**
+     * What only the robot has and a C++ build needs: the VMX headers and the VMX HAL library, both from the OS image.
+     * The halsim_vmx extension and its Studica backend plugin are compiled on the PC, not copied from the robot.
+     */
     public static final java.util.List<String> DEFAULT_SDK_PATHS = java.util.List.of(
             "/usr/local/include/vmxpi",
-            "/usr/local/lib/vmxpi/libvmxpi_hal_cpp.so",
-            "/opt/halsim_vmx/libhalsim_vmx_studica.so");
+            "/usr/local/lib/vmxpi/libvmxpi_hal_cpp.so");
 
     /**
      * Location of a robot file after {@code fetchVmxSdk<name>}: {@code sdkPath("/usr/local/include/vmxpi")}

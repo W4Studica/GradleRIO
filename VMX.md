@@ -48,17 +48,18 @@ Directories (derived from `username`): `/home/<u>`, `/home/<u>/wpilib/classpath`
 
 ## Fetching what only the robot has (C++)
 
-A C++ program needs `VMXPi.h`, `libvmxpi_hal_cpp.so` and, to share the `VMXPi` with `halsim_vmx`, the Studica backend
-plugin. None of them can be downloaded; they live on the robot. `./gradlew fetchVmx<SdkTarget>` (for a target named `vmx`:
-`fetchVmxSdkvmx`) copies them over the same SSH login and address the deploy uses (SFTP, no extra tools) into
-`build/vmxsdk<target>/`, keeping their paths:
+A C++ program needs `VMXPi.h` and `libvmxpi_hal_cpp.so`. They come with the robot's OS image (the `vmx-hal` package) and cannot be
+downloaded. `./gradlew fetchVmxSdk<target>` (for a target named `vmx`: `fetchVmxSdkvmx`) copies them over the same SSH login and
+address the deploy uses (SFTP, no extra tools) into `build/vmxsdk<target>/`, keeping their paths. Everything else, including
+`halsim_vmx` and its Studica backend plugin, is compiled on the PC (see the `vmx-cpp-test` example in this repository's
+documentation, or `allwpilib/simulation/halsim_vmx/DESIGN.md`).
 
 ```groovy
 def vmxHeaders = deploy.targets.vmx.sdkPath('/usr/local/include/vmxpi')
 def vmxHal     = deploy.targets.vmx.sdkPath('/usr/local/lib/vmxpi/libvmxpi_hal_cpp.so')
 ```
 
-`remotePaths` (default: the three paths above; directories are copied recursively) and `port` (default 22) can be set on the
+`remotePaths` (default: the two paths above; directories are copied recursively) and `port` (default 22) can be set on the
 task. The server key is accepted without checking, like the deploy does. Run it once per robot image; the build itself is
 offline afterwards.
 
@@ -102,11 +103,77 @@ Configuration names differ so both targets can coexist: `vmxDebug` / `vmxRelease
   Natives built with the trixie toolchain, including the published `linuxarm64` WPILib natives, are expected
   not to load there (newer glibc/libstdc++ symbol versions). Unverified on hardware. This must be solved
   (newer OS on the VMX, own sysroot, or building on the device) before this target is usable.
-- `libhalsim_vmx.so` (cross-buildable, no VMX headers) loads the Studica backend as a plugin through
-  `HALSIMVMX_BACKEND=<path to libhalsim_vmx_studica.so>`; the plugin must be built once on the VMX itself
-  (see allwpilib `simulation/halsim_vmx/DESIGN.md`). Set it with `environment.put('HALSIMVMX_BACKEND', ...)`.
-  Neither library is published to Maven yet.
-- The C++ artifact (`WPILibNativeArtifact`) is written but only registration is tested; it has not been used with a real
-  `NativeExecutableSpec` build. aarch64 cross-compilation is enabled for C++ projects (needs the arm64 toolchain download).
+- `libhalsim_vmx.so` (no VMX headers needed) loads the Studica backend as a plugin through
+  `HALSIMVMX_BACKEND=<path to libhalsim_vmx_studica.so>`. Neither library is published to Maven; a C++ project compiles both
+  from the `allwpilib` fork's sources as extra components and deploys them with the other libraries (see "C++ example" below).
+  The plugin needs `VMXPi.h` and `libvmxpi_hal_cpp.so` from `fetchVmxSdk<target>`. A Java project has no way to build them yet.
+- **`libMrcLib.so` (WPILib, binary only) kills a Pi 4 with `SIGILL`.** It is built with the SystemCore toolchain and uses ARMv8.1
+  atomics, which a Cortex-A72 lacks; it is linked into a C++ program by `wpi.cpp.deps.wpilib()`. The robot's `robot_manager`
+  works around it (`lse_emu`, emulates the instructions through `LD_AUDIT`; about 27 microseconds per instruction), see the
+  Robot-Manager repository. Nothing to do in the project, but it is why a program that exits without it exits with code 132.
+- The C++ artifact (`WPILibNativeArtifact`) was used with a real `NativeExecutableSpec` build and deployed to a VMX-pi
+  (2026-10-11, see "C++ example"). aarch64 cross-compilation is enabled for C++ projects (needs `installArm64Toolchain` once).
 - Debug (`debug = true`) adds a JDWP agent only; no gdbserver flow.
 - Nothing here has been run against a real VMX-pi.
+
+## C++ example (measured on a VMX-pi, 2026-10-11)
+
+Cross compiled on the PC, deployed with `./gradlew deploy`, run by `robot_manager`. Only `VMXPi.h` and `libvmxpi_hal_cpp.so` come
+from the robot. `halsim_vmx` and the Studica backend plugin are built from the `allwpilib` fork's sources as two extra
+`NativeLibrarySpec` components and uploaded with the other libraries. The parts that matter in `build.gradle`:
+
+```groovy
+plugins { id "cpp"; id "org.wpilib.GradleRIO" }
+
+deploy { targets { vmx(getTargetTypeClass('VmxPi')) {
+    username = '<ssh user>'; password = '<ssh password>'; addAddress('<host or ip>')
+    artifacts { wpilibCpp(getArtifactTypeClass('WPILibNativeArtifact')) {
+        // halsimExtensions defaults to <library dir>/libhalsim_vmx.so, which deploy uploads (it is linked below)
+        environment.put('HALSIMVMX_BACKEND', "/home/<ssh user>/wpilib/third-party/lib/libhalsim_vmx_studica.so")
+        environment.put('LD_PRELOAD', '/opt/robot_manager/lib/libvmx_gpio_isr_shim.so')   // kernels without /sys/class/gpio
+        environment.put('HALSIMVMX_DIO_MAP', '0:0,1:1')
+    } }
+} } }
+
+def vmxHeaders = deploy.targets.vmx.sdkPath('/usr/local/include/vmxpi')                      // from fetchVmxSdkvmx
+def vmxHal     = deploy.targets.vmx.sdkPath('/usr/local/lib/vmxpi/libvmxpi_hal_cpp.so')
+def ext        = '<path to>/allwpilib/simulation/halsim_vmx'
+
+model { components {
+    halsim_vmx(NativeLibrarySpec) {
+        targetPlatform wpi.platforms.linuxarm64
+        sources.cpp { source { srcDir "$ext/src/main/native/cpp" }; exportedHeaders { srcDir "$ext/src/main/native/include" } }
+        wpi.cpp.deps.useLibrary(it, 'hal_shared', 'wpiutil_shared')
+    }
+    halsim_vmx_studica(NativeLibrarySpec) {
+        targetPlatform wpi.platforms.linuxarm64
+        sources {
+            cpp { source { srcDir "$ext/src/studica/native/cpp" }
+                  exportedHeaders { srcDir "$ext/src/studica/native/include"; srcDir "$ext/src/main/native/include" } }
+            studicaDrivers(CppSourceSet) { source { srcDir '<path to>/allwpilib/studica_drivers'
+                                                    include 'analog_input.cpp', 'dio.cpp', 'encoder.cpp', 'imu.cpp' } }
+        }
+        binaries.all {
+            cppCompiler.args '-I' + vmxHeaders.path, '-I<path to>/allwpilib/studica_drivers'
+            linker.args vmxHal.path, '-Wl,-rpath,/usr/local/lib/vmxpi', '-Wl,-rpath-link,' + vmxHal.parent, '-Wl,--allow-shlib-undefined'
+        }
+    }
+    robot(NativeExecutableSpec) {
+        targetPlatform wpi.platforms.linuxarm64
+        sources.cpp { source { srcDir 'src/main/cpp' } }
+        binaries.all {
+            // The robot program must use the plugin's VMXPi: wpilibvmx::SharedVMX()
+            lib library: 'halsim_vmx_studica', linkage: 'shared'
+            lib library: 'halsim_vmx', linkage: 'shared'      // makes deploy upload the extension; the HAL loads it by path
+            cppCompiler.args '-I' + vmxHeaders.path, '-I<path to>/allwpilib/studica_drivers', "-I$ext/src/main/native/include",
+                             "-I$ext/src/studica/native/include"
+            linker.args vmxHal.path, '-Wl,-rpath,/usr/local/lib/vmxpi', '-Wl,-rpath-link,' + vmxHal.parent, '-Wl,--allow-shlib-undefined'
+        }
+        deploy.targets.vmx.artifacts.wpilibCpp.component = it     // binds the deploy artifact to this program
+        wpi.cpp.enableExternalTasks(it)
+        wpi.cpp.deps.wpilib(it)
+    }
+} }
+```
+
+Once per robot image: `./gradlew fetchVmxSdkvmx`; once per PC: `./gradlew installArm64Toolchain`. Then `./gradlew deploy`.

@@ -66,7 +66,7 @@ tasks.named('fetchVmxSdkvmx') { port = ${server.port} }
         GradleRunner.create().withProjectDir(projectDir).withArguments(args.toList() + ['--stacktrace']).withPluginClasspath()
     }
 
-    def "copies the headers, the HAL and the plugin and keeps their paths"() {
+    def "copies the headers and the HAL and keeps their paths"() {
         given:
         project()
 
@@ -79,7 +79,20 @@ tasks.named('fetchVmxSdkvmx') { port = ${server.port} }
         new File(sdk, 'usr/local/include/vmxpi/VMXPi.h').text == '// header'
         new File(sdk, 'usr/local/include/vmxpi/sub/Inner.h').text == '// inner'
         new File(sdk, 'usr/local/lib/vmxpi/libvmxpi_hal_cpp.so').bytes == [1, 2, 3, 4] as byte[]
-        new File(sdk, 'opt/halsim_vmx/libhalsim_vmx_studica.so').bytes == [5, 6] as byte[]
+        !new File(sdk, 'opt').exists()   // not a default: halsim_vmx and its plugin are built on the PC
+    }
+
+    def "other robot files can be asked for"() {
+        given:
+        project()
+        new File(projectDir, 'build.gradle') << "\ntasks.named('fetchVmxSdkvmx') { remotePaths = ['/opt/halsim_vmx/libhalsim_vmx_studica.so'] }\n"
+
+        when:
+        def result = runner('fetchVmxSdkvmx').build()
+
+        then:
+        result.task(':fetchVmxSdkvmx').outcome == SUCCESS
+        new File(projectDir, 'build/vmxsdkvmx/opt/halsim_vmx/libhalsim_vmx_studica.so').bytes == [5, 6] as byte[]
     }
 
     def "a wrong password fails the task"() {
