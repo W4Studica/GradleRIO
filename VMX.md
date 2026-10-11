@@ -199,4 +199,4 @@ model { components {
 } }
 ```
 
-Once per PC: `./gradlew installArm64Toolchain`. Then `./gradlew deploy` (it fetches the robot's VMX files the first time; `-PrefetchVmxSdk` fetches again).
+Once per PC: `./gradlew installArm64Toolchain` (alone: it ends the run; it downloads the cross compiler). Then `./gradlew deploy` (it fetches the robot's VMX files the first time; `-PrefetchVmxSdk` fetches again).
