@@ -107,6 +107,10 @@ Configuration names differ so both targets can coexist: `vmxDebug` / `vmxRelease
   `HALSIMVMX_BACKEND=<path to libhalsim_vmx_studica.so>`. Neither library is published to Maven; a C++ project compiles both
   from the `allwpilib` fork's sources as extra components and deploys them with the other libraries (see "C++ example" below).
   The plugin needs `VMXPi.h` and `libvmxpi_hal_cpp.so` from `fetchVmxSdk<target>`. A Java project has no way to build them yet.
+- **Titan: use `wpilibvmx::StudicaTitan` with `TitanEnableGuard`, never `studica_driver::Titan::Enable()` for switching.** `Enable()` hands
+  the repetition of its CAN frame to the VMX board, which keeps sending after the program has died. MEASURED: the motor kept turning
+  after `kill -9` and after `systemctl stop`. `StudicaTitan` sends single frames and the guard repeats them from the program, so the
+  Titan stops by itself (200 ms) when the program stops.
 - **`libMrcLib.so` (WPILib, binary only) kills a Pi 4 with `SIGILL`.** It is built with the SystemCore toolchain and uses ARMv8.1
   atomics, which a Cortex-A72 lacks; it is linked into a C++ program by `wpi.cpp.deps.wpilib()`. The robot's `robot_manager`
   works around it (`lse_emu`, emulates the instructions through `LD_AUDIT`; about 27 microseconds per instruction), see the
