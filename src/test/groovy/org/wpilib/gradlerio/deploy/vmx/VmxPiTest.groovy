@@ -285,4 +285,136 @@ tasks.register('showGString') {
         result.output.contains('CEXT=/home/tester/wpilib/third-party/lib/libhalsim_vmx.so:/opt/gstring/libext.so')
         result.output.contains('CENV=B="/opt/gstring/value" ')
     }
+
+    def "team = N adds the wired address and the Wi-Fi access point address of the team"() {
+        given:
+        buildFile << """
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.wpilib.GradleRIO'
+}
+
+deploy {
+    targets {
+        vmx(getTargetTypeClass('VmxPi')) {
+            username = 'tester'
+            password = 'secret'
+            team = 1234
+        }
+    }
+}
+
+tasks.register('showTeam') {
+    doLast {
+        def t = deploy.targets.vmx
+        println "TEAM=" + t.team
+        println "LOCATIONS=" + t.locations.collect { it.address }.sort().join(',')
+    }
+}
+"""
+        when:
+        def result = run('showTeam')
+
+        then:
+        result.output.contains('TEAM=1234')
+        result.output.contains('LOCATIONS=10.12.34.2,172.22.11.2')
+    }
+
+    def "team numbers follow the same rule as the robot's setupHotspot"() {
+        expect:
+        org.wpilib.gradlerio.deploy.vmx.VmxPi.teamAddress(team) == address
+
+        where:
+        team | address
+        1234 | '10.12.34.2'
+        4444 | '10.44.44.2'
+        254  | '10.2.54.2'
+        1    | '10.0.1.2'
+        9999 | '10.99.99.2'
+    }
+
+    def "a team number outside 1-9999 fails the build with a message"() {
+        given:
+        buildFile << """
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.wpilib.GradleRIO'
+}
+
+deploy {
+    targets {
+        vmx(getTargetTypeClass('VmxPi')) {
+            username = 'tester'
+            password = 'secret'
+            team = 12345
+        }
+    }
+}
+"""
+        when:
+        def result = GradleRunner.create().withProjectDir(testProjectDir).withArguments('tasks').withPluginClasspath().buildAndFail()
+
+        then:
+        result.output.contains('team number must be 1-9999')
+    }
+
+    def "team needs the login first, like addAddress"() {
+        given:
+        buildFile << """
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.wpilib.GradleRIO'
+}
+
+deploy {
+    targets {
+        vmx(getTargetTypeClass('VmxPi')) {
+            team = 1234
+        }
+    }
+}
+"""
+        when:
+        def result = GradleRunner.create().withProjectDir(testProjectDir).withArguments('tasks').withPluginClasspath().buildAndFail()
+
+        then:
+        result.output.contains('set username and password before addAddress')
+    }
+
+    def "team and addAddress can be combined and a repeated team does not fail"() {
+        given:
+        buildFile << """
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.wpilib.GradleRIO'
+}
+
+deploy {
+    targets {
+        vmx(getTargetTypeClass('VmxPi')) {
+            username = 'tester'
+            password = 'secret'
+            addAddress('172.22.11.2')
+            team = 1234
+            team = 1234
+        }
+    }
+}
+
+tasks.register('showLocations') {
+    doLast {
+        println "LOCATIONS=" + deploy.targets.vmx.locations.collect { it.address }.sort().join(',')
+    }
+}
+"""
+        when:
+        def result = run('showLocations')
+
+        then:
+        result.output.contains('LOCATIONS=10.12.34.2,172.22.11.2')
+    }
 }

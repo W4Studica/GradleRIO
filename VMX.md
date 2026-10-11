@@ -63,6 +63,22 @@ def vmxHal     = deploy.targets.vmx.sdkPath('/usr/local/lib/vmxpi/libvmxpi_hal_c
 task. The server key is accepted without checking, like the deploy does. Run it once per robot image; the build itself is
 offline afterwards.
 
+## Finding the robot: `team`
+
+```groovy
+vmx(getTargetTypeClass('VmxPi')) {
+    username = 'ubuntu'
+    password = 'password'
+    team = 1234          // adds 172.22.11.2 (wired) and 10.12.34.2 (Wi-Fi access point)
+    // addAddress('vmx.local') adds any other address
+}
+```
+
+`team` adds both addresses the VMX has: its wired port, always `172.22.11.2`, and its own Wi-Fi network at `10.TE.AM.2` (1234 gives
+`10.12.34.2`, 4444 gives `10.44.44.2`; the same rule as the robot's `setupHotspot`). The deploy uses whichever one answers, so it is
+the same on the cable and on the robot's Wi-Fi. `username` and `password` come first, like for `addAddress`. `fetchVmxSdk<target>`
+tries the addresses one after the other too.
+
 ## Same names as 2027 (SystemCore)
 
 The VMX classes use the **same simple class names** as the SystemCore ones, because

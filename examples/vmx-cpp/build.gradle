@@ -10,11 +10,11 @@ plugins {
 def robotUser = System.getenv('VMX_USER') ?: 'ubuntu'
 // "password" is the factory default of the VMX image. Change it on the robot, then set VMX_PASSWORD.
 def robotPassword = System.getenv('VMX_PASSWORD') ?: 'password'
+// How to find the robot: VMX_HOST (an address or name) if set, otherwise the team number: the deploy then tries the wired
+// port (172.22.11.2) and the robot's Wi-Fi access point (10.TE.AM.2, team 1234 -> 10.12.34.2), whichever answers.
+// 1234 is the team number of the VMX image's default Wi-Fi ("VMX-1234").
 def robotHost = System.getenv('VMX_HOST') ?: findProperty('vmxHost')
-if (robotHost == null) {
-    robotHost = 'vmx.local'
-    logger.warn('VMX_HOST is not set, using vmx.local. Set VMX_HOST (or -PvmxHost=...) to the robot\'s address.')
-}
+def robotTeam = (System.getenv('VMX_TEAM') ?: findProperty('vmxTeam') ?: '1234') as int
 // The allwpilib fork with halsim_vmx and studica_drivers; the default is the folder next to GradleRIO.
 def allwpilib = file(findProperty('allwpilibDir') ?: '../../../allwpilib')
 def halsimVmx = new File(allwpilib, 'simulation/halsim_vmx')
@@ -26,7 +26,11 @@ deploy {
         vmx(getTargetTypeClass('VmxPi')) {
             username = robotUser
             password = robotPassword
-            addAddress(robotHost)
+            if (robotHost != null) {
+                addAddress(robotHost)
+            } else {
+                team = robotTeam
+            }
 
             artifacts {
                 wpilibCpp(getArtifactTypeClass('WPILibNativeArtifact')) {

@@ -66,10 +66,25 @@ public abstract class FetchVmxSdkTask extends DefaultTask {
 
     @TaskAction
     public void fetch() throws IOException {
-        SshDeployLocation location = findLocation();
+        List<SshDeployLocation> locations = findLocations();
         Path root = getSdkDirectory().get().getAsFile().toPath();
         Files.createDirectories(root);
 
+        // The target may have several addresses (the wired port and the Wi-Fi access point of a team): use the first that answers.
+        List<String> failures = new ArrayList<>();
+        for (SshDeployLocation location : locations) {
+            try {
+                fetchFrom(location, root);
+                return;
+            } catch (IOException e) {
+                failures.add(location.getAddress() + ": " + e.getMessage());
+                getLogger().lifecycle("{} did not answer ({}); trying the next address", location.getAddress(), e.getMessage());
+            }
+        }
+        throw new GradleException("Could not reach the robot on any of its addresses:\n  " + String.join("\n  ", failures));
+    }
+
+    private void fetchFrom(SshDeployLocation location, Path root) throws IOException {
         SshClient client = SshClient.setUpDefaultClient();
         client.setServerKeyVerifier(new AcceptAllLoggedServerKeyVerifier(getLogger()));
         client.start();
@@ -87,16 +102,21 @@ public abstract class FetchVmxSdkTask extends DefaultTask {
         }
     }
 
-    private SshDeployLocation findLocation() {
+    private List<SshDeployLocation> findLocations() {
+        List<SshDeployLocation> found = new ArrayList<>();
         List<String> tried = new ArrayList<>();
         for (DeployLocation loc : target.getLocations()) {
             if (loc instanceof SshDeployLocation ssh) {
-                return ssh;
+                found.add(ssh);
+            } else {
+                tried.add(loc.toString());
             }
-            tried.add(loc.toString());
         }
-        throw new GradleException("VmxPi target '" + target.getName() + "' has no SSH address (call addAddress). Found: "
-                + tried);
+        if (found.isEmpty()) {
+            throw new GradleException("VmxPi target '" + target.getName() + "' has no SSH address (set team or call addAddress). Found: "
+                    + tried);
+        }
+        return found;
     }
 
     private void copy(SftpClient sftp, String remote, Path root) throws IOException {

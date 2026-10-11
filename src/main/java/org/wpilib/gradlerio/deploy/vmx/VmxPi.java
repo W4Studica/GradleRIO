@@ -27,9 +27,24 @@ public class VmxPi extends WPIRemoteTarget {
     /** Name of the systemd service (robot_manager) that starts the robot program. */
     public static final String DEFAULT_SERVICE_NAME = "robot_manager";
 
+    /** The VMX's wired port, always this address (it also hands out addresses to a computer plugged in directly). */
+    public static final String WIRED_ADDRESS = "172.22.11.2";
+
+    /**
+     * The VMX's address on its own Wi-Fi network for a team number: 10.TE.AM.2 (1234 gives 10.12.34.2, 4444 gives
+     * 10.44.44.2). The same rule as the robot's setupHotspot.
+     */
+    public static String teamAddress(int team) {
+        if (team < 1 || team > 9999) {
+            throw new GradleException("The team number must be 1-9999, got " + team);
+        }
+        return "10." + (team / 100) + "." + (team % 100) + ".2";
+    }
+
     private String username;
     private String password;
     private String serviceName = DEFAULT_SERVICE_NAME;
+    private Integer team;
 
     private final RobotProgramKillArtifact programKillArtifact;
     private final RobotProgramStartArtifact programStartArtifact;
@@ -122,6 +137,28 @@ public class VmxPi extends WPIRemoteTarget {
 
     public String getLibraryDirectory() {
         return getHomeDirectory() + "/wpilib/third-party/lib";
+    }
+
+    public Integer getTeam() {
+        return team;
+    }
+
+    /**
+     * Sets the team number and adds the two addresses the VMX has: the wired port (172.22.11.2) and its Wi-Fi access
+     * point (10.TE.AM.2, 1234 gives 10.12.34.2). The deploy uses whichever one answers, so it works the same whether the
+     * computer is on the cable or on the robot's Wi-Fi. username and password must be set before this call.
+     */
+    public void setTeam(int team) {
+        String wifi = teamAddress(team);  // validates the number before anything is added
+        this.team = team;
+        addAddressOnce(WIRED_ADDRESS);
+        addAddressOnce(wifi);
+    }
+
+    private void addAddressOnce(String address) {
+        if (getLocations().findByName(address) == null) {
+            addAddress(address);
+        }
     }
 
     /**

@@ -118,4 +118,34 @@ tasks.named('fetchVmxSdkvmx') { port = ${server.port} }
         then:
         result.output.contains('/opt/not/there.so')
     }
+
+    def "an address that does not answer is skipped and the next one is used"() {
+        given: "the first address (by name) has nothing listening, the second is the server"
+        project()
+        new File(projectDir, 'build.gradle').text = new File(projectDir, 'build.gradle').text.replace(
+                "addAddress('127.0.0.1')", "addAddress('127.0.0.0')\n            addAddress('127.0.0.1')")
+
+        when:
+        def result = runner('fetchVmxSdkvmx').build()
+
+        then:
+        result.task(':fetchVmxSdkvmx').outcome == SUCCESS
+        new File(projectDir, 'build/vmxsdkvmx/usr/local/include/vmxpi/VMXPi.h').text == '// header'
+    }
+
+    def "when no address answers the error lists every one"() {
+        given:
+        project()
+        new File(projectDir, 'build.gradle').text = new File(projectDir, 'build.gradle').text.replace(
+                "addAddress('127.0.0.1')", "addAddress('127.0.0.0')\n            addAddress('127.0.0.2')") +
+                "\ntasks.named('fetchVmxSdkvmx') { port = 1 }\n"
+
+        when:
+        def result = runner('fetchVmxSdkvmx').buildAndFail()
+
+        then:
+        result.output.contains('Could not reach the robot on any of its addresses')
+        result.output.contains('127.0.0.0')
+        result.output.contains('127.0.0.2')
+    }
 }
