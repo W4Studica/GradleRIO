@@ -23,7 +23,7 @@ What runs where:
    or `-PteamNumber=4444`, which means `10.44.44.2`. (`VMX_TEAM=4444` overrides both.) A specific address or name:
    `export VMX_HOST=<ip or name>`. The login is `ubuntu` / `password` (the image default); change it with `VMX_USER` and
    `VMX_PASSWORD`. `GradleRIO` does not store it anywhere.
-5. **PC, once per robot image**: `./gradlew fetchVmxSdkvmx` (copies `VMXPi.h` and `libvmxpi_hal_cpp.so` from the robot).
+5. **PC**: nothing to do: `./gradlew deploy` fetches `VMXPi.h` and `libvmxpi_hal_cpp.so` from the robot the first time (`-PrefetchVmxSdk` fetches again, e.g. after a new robot image).
 
 ## Build and deploy
 

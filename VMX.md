@@ -199,4 +199,4 @@ model { components {
 } }
 ```
 
-Once per robot image: `./gradlew fetchVmxSdkvmx`; once per PC: `./gradlew installArm64Toolchain`. Then `./gradlew deploy`.
+Once per PC: `./gradlew installArm64Toolchain`. Then `./gradlew deploy` (it fetches the robot's VMX files the first time; `-PrefetchVmxSdk` fetches again).
