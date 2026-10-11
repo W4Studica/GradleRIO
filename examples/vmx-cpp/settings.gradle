@@ -1,0 +1,8 @@
+// Uses the GradleRIO checkout this example lives in, so the VmxPi target is available.
+pluginManagement {
+    includeBuild('../..')
+    repositories {
+        mavenLocal()
+        gradlePluginPortal()
+    }
+}

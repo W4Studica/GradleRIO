@@ -51,8 +51,8 @@ Directories (derived from `username`): `/home/<u>`, `/home/<u>/wpilib/classpath`
 A C++ program needs `VMXPi.h` and `libvmxpi_hal_cpp.so`. They come with the robot's OS image (the `vmx-hal` package) and cannot be
 downloaded. `./gradlew fetchVmxSdk<target>` (for a target named `vmx`: `fetchVmxSdkvmx`) copies them over the same SSH login and
 address the deploy uses (SFTP, no extra tools) into `build/vmxsdk<target>/`, keeping their paths. Everything else, including
-`halsim_vmx` and its Studica backend plugin, is compiled on the PC (see the `vmx-cpp-test` example in this repository's
-documentation, or `allwpilib/simulation/halsim_vmx/DESIGN.md`).
+`halsim_vmx` and its Studica backend plugin, is compiled on the PC (see `examples/vmx-cpp/`, a complete project,
+and `allwpilib/simulation/halsim_vmx/DESIGN.md`).
 
 ```groovy
 def vmxHeaders = deploy.targets.vmx.sdkPath('/usr/local/include/vmxpi')
@@ -117,6 +117,9 @@ Configuration names differ so both targets can coexist: `vmxDebug` / `vmxRelease
 - Nothing here has been run against a real VMX-pi.
 
 ## C++ example (measured on a VMX-pi, 2026-10-11)
+
+The complete project is `examples/vmx-cpp/` (build.gradle, a robot program using `AnalogInput`, `Encoder`, `OnboardIMU` and a Titan, and a
+README with the steps). The excerpt below shows the parts that matter.
 
 Cross compiled on the PC, deployed with `./gradlew deploy`, run by `robot_manager`. Only `VMXPi.h` and `libvmxpi_hal_cpp.so` come
 from the robot. `halsim_vmx` and the Studica backend plugin are built from the `allwpilib` fork's sources as two extra
