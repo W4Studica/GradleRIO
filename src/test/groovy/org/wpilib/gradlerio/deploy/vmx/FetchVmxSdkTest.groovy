@@ -138,13 +138,14 @@ tasks.named('fetchVmxSdkvmx') { port = ${server.port} }
         project()
         new File(projectDir, 'build.gradle').text = new File(projectDir, 'build.gradle').text.replace(
                 "addAddress('127.0.0.1')", "addAddress('127.0.0.0')\n            addAddress('127.0.0.2')") +
-                "\ntasks.named('fetchVmxSdkvmx') { port = 1 }\n"
+                "\ntasks.named('fetchVmxSdkvmx') { port = 1; attempts = 2; retryDelaySeconds = 0 }\n"
 
         when:
         def result = runner('fetchVmxSdkvmx').buildAndFail()
 
         then:
-        result.output.contains('Could not reach the robot on any of its addresses')
+        result.output.contains('Could not reach the robot on any of its addresses (2 rounds)')
+        result.output.contains('The robot did not answer (round 1 of 2); trying again')
         result.output.contains('127.0.0.0')
         result.output.contains('127.0.0.2')
     }

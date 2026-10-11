@@ -35,7 +35,7 @@ import org.wpilib.deployutils.deploy.target.location.SshDeployLocation;
  * {@link VmxPi#sdkPath(String)}.
  */
 public abstract class FetchVmxSdkTask extends DefaultTask {
-    private static final Duration TIMEOUT = Duration.ofSeconds(15);
+    private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
     private final VmxPi target;
 
@@ -56,6 +56,14 @@ public abstract class FetchVmxSdkTask extends DefaultTask {
     @Input
     public abstract Property<Integer> getPort();
 
+    /** How many times every address is tried before giving up (a Wi-Fi link can stall for several seconds). */
+    @Input
+    public abstract Property<Integer> getAttempts();
+
+    /** Seconds to wait between two rounds. */
+    @Input
+    public abstract Property<Integer> getRetryDelaySeconds();
+
     @OutputDirectory
     public abstract DirectoryProperty getSdkDirectory();
 
@@ -70,18 +78,36 @@ public abstract class FetchVmxSdkTask extends DefaultTask {
         Path root = getSdkDirectory().get().getAsFile().toPath();
         Files.createDirectories(root);
 
-        // The target may have several addresses (the wired port and the Wi-Fi access point of a team): use the first that answers.
+        // The target may have several addresses (the wired port and the Wi-Fi access point of a team): use the first that
+        // answers. Every address is tried again in the next round, so a stalled link does not fail the build.
         List<String> failures = new ArrayList<>();
-        for (SshDeployLocation location : locations) {
-            try {
-                fetchFrom(location, root);
-                return;
-            } catch (IOException e) {
-                failures.add(location.getAddress() + ": " + e.getMessage());
-                getLogger().lifecycle("{} did not answer ({}); trying the next address", location.getAddress(), e.getMessage());
+        int attempts = Math.max(1, getAttempts().get());
+        for (int round = 1; round <= attempts; round++) {
+            failures.clear();
+            for (SshDeployLocation location : locations) {
+                try {
+                    fetchFrom(location, root);
+                    return;
+                } catch (IOException e) {
+                    failures.add(location.getAddress() + ": " + e.getMessage());
+                    getLogger().lifecycle("{} did not answer ({}); trying the next address", location.getAddress(), e.getMessage());
+                }
+            }
+            if (round < attempts) {
+                getLogger().lifecycle("The robot did not answer (round {} of {}); trying again", round, attempts);
+                pause(getRetryDelaySeconds().get());
             }
         }
-        throw new GradleException("Could not reach the robot on any of its addresses:\n  " + String.join("\n  ", failures));
+        throw new GradleException("Could not reach the robot on any of its addresses (" + attempts + " rounds):\n  "
+                + String.join("\n  ", failures));
+    }
+
+    private static void pause(int seconds) {
+        try {
+            Thread.sleep(Math.max(0, seconds) * 1000L);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private void fetchFrom(SshDeployLocation location, Path root) throws IOException {

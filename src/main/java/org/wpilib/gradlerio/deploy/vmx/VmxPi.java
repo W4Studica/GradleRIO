@@ -54,7 +54,8 @@ public class VmxPi extends WPIRemoteTarget {
         super(name, project, de, firstExtension);
 
         setMaxChannels(4);
-        setTimeout(7);
+        // A Wi-Fi link can stall for ten seconds (TCP retransmits); a short timeout would fail the whole deploy.
+        setTimeout(30);
 
         programKillArtifact = project.getObjects().newInstance(RobotProgramKillArtifact.class, "programKill" + name, this);
         programStartArtifact = project.getObjects().newInstance(RobotProgramStartArtifact.class, "programStart" + name, this);
@@ -69,6 +70,8 @@ public class VmxPi extends WPIRemoteTarget {
             task.getSdkDirectory().set(project.getLayout().getBuildDirectory().dir("vmxsdk" + name));
             task.getRemotePaths().convention(DEFAULT_SDK_PATHS);
             task.getPort().convention(22);
+            task.getAttempts().convention(3);
+            task.getRetryDelaySeconds().convention(3);
         });
     }
 
