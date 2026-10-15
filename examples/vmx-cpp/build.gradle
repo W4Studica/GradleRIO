@@ -7,31 +7,19 @@ plugins {
 }
 
 // ---- the robot ----------------------------------------------------------------------------------------------------
-def robotUser = System.getenv('VMX_USER') ?: 'ubuntu'
-// "password" is the factory default of the VMX image. Change it on the robot, then set VMX_PASSWORD.
-def robotPassword = System.getenv('VMX_PASSWORD') ?: 'password'
-// How to find the robot: VMX_HOST (an address or name) if set, otherwise the team number: the deploy then tries the wired
-// port (172.22.11.2) and the robot's Wi-Fi access point (10.TE.AM.2, team 1234 -> 10.12.34.2), whichever answers.
-// The team number is the WPILib one: -PteamNumber=N, else .wpilib/wpilib_preferences.json ("teamNumber", which VS Code's
-// "Set Team Number" writes), else 1234, the team number of the VMX image's default Wi-Fi ("VMX-1234"). VMX_TEAM overrides it.
-def robotHost = System.getenv('VMX_HOST') ?: findProperty('vmxHost')
-def robotTeam = (System.getenv('VMX_TEAM') ?: findProperty('vmxTeam') ?: wpilib.getTeamOrDefault(1234)) as int
+// Connect as ubuntu/password. The WPILib team number selects the VMX Wi-Fi address; GradleRIO also tries its wired address.
 // The allwpilib fork with halsim_vmx and studica_drivers; the default is the folder next to GradleRIO.
 def allwpilib = file(findProperty('allwpilibDir') ?: '../../../allwpilib')
 def halsimVmx = new File(allwpilib, 'simulation/halsim_vmx')
 def studicaDriversDir = new File(allwpilib, 'studica_drivers')
-def libDir = "/home/${robotUser}/wpilib/third-party/lib".toString()   // where deploy puts the libraries
+def libDir = "/home/ubuntu/wpilib/third-party/lib"   // where deploy puts the libraries
 
 deploy {
     targets {
         vmx(getTargetTypeClass('VmxPi')) {
-            username = robotUser
-            password = robotPassword
-            if (robotHost != null) {
-                addAddress(robotHost)
-            } else {
-                team = robotTeam
-            }
+            username = 'ubuntu'
+            password = 'password'
+            team = wpilib.getTeamNumber()
 
             artifacts {
                 wpilibCpp(getArtifactTypeClass('WPILibNativeArtifact')) {

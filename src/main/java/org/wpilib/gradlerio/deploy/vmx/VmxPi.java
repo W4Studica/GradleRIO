@@ -27,6 +27,9 @@ public class VmxPi extends WPIRemoteTarget {
     /** Name of the systemd service (robot_manager) that starts the robot program. */
     public static final String DEFAULT_SERVICE_NAME = "robot_manager";
 
+    /** WPILib RioLog's NetConsole-compatible TCP port, served by robot_manager. */
+    public static final int RIOLOG_PORT = 1741;
+
     /** The VMX's wired port, always this address (it also hands out addresses to a computer plugged in directly). */
     public static final String WIRED_ADDRESS = "172.22.11.2";
 

@@ -49,8 +49,8 @@ public class WPILibDeployPlugin implements Plugin<Project> {
         this.project = project;
 
         project.getPluginManager().apply(DeployUtils.class);
-        // TODO
-        //project.getPluginManager().apply(RioLogPlugin.class);
+        // RioLog is a VS Code extension client, not a Gradle plugin. The VMX target
+        // exposes robot stdout/stderr through robot_manager on NetConsole's TCP port.
 
         DeployExtension deployExtension = project.getExtensions().getByType(DeployExtension.class);
 

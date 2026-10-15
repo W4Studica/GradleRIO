@@ -16,10 +16,9 @@ So the target platform is `linuxarm64` (`wpi.platforms.linuxarm64`).
 deploy {
     targets {
         vmx(getTargetTypeClass('VmxPi')) {
-            // Nothing is assumed. Set these before addAddress.
-            username = '<ssh user>'
-            password = '<ssh password>'
-            addAddress('<host or ip>')
+            username = 'ubuntu'
+            password = 'password'
+            team = project.wpilib.getTeamNumber()
 
             artifacts {
                 wpilibJava(getArtifactTypeClass('WPILibJavaArtifact')) {
@@ -69,15 +68,13 @@ offline afterwards.
 vmx(getTargetTypeClass('VmxPi')) {
     username = 'ubuntu'
     password = 'password'
-    team = 1234          // adds 172.22.11.2 (wired) and 10.12.34.2 (Wi-Fi access point)
-    // addAddress('vmx.local') adds any other address
+    team = project.wpilib.getTeamNumber()  // reads VS Code's Set Team Number setting
 }
 ```
 
 `team` adds both addresses the VMX has: its wired port, always `172.22.11.2`, and its own Wi-Fi network at `10.TE.AM.2` (1234 gives
-`10.12.34.2`, 4444 gives `10.44.44.2`; the same rule as the robot's `setupHotspot`). The deploy uses whichever one answers, so it is
-the same on the cable and on the robot's Wi-Fi. `username` and `password` come first, like for `addAddress`. `fetchVmxSdk<target>`
-tries the addresses one after the other too.
+`10.12.34.2`, 4444 gives `10.44.44.2`; the same rule as the robot's `setupHotspot`). The deploy uses whichever one answers, so it works on the cable and on the robot's Wi-Fi. The W4Studica example uses the fixed
+login `ubuntu` / `password`; `fetchVmxSdk<target>` tries the same addresses in order.
 
 ## Same names as 2027 (SystemCore)
 
@@ -141,7 +138,10 @@ Configuration names differ so both targets can coexist: `vmxDebug` / `vmxRelease
 The complete project is `examples/vmx-cpp/` (build.gradle, a robot program using `AnalogInput`, `Encoder`, `OnboardIMU` and a Titan, and a
 README with the steps). The excerpt below shows the parts that matter.
 
-Cross compiled on the PC, deployed with `./gradlew deploy`, run by `robot_manager`. Only `VMXPi.h` and `libvmxpi_hal_cpp.so` come
+Cross compiled on the PC, deployed with `./gradlew deploy`, run by `robot_manager`. The manager keeps stdout/stderr in
+systemd journal and serves the same program output using WPILib NetConsole framing on TCP port 1741. The installer
+publishes `robot.local` through Avahi for VSCode's standard RioLog discovery. Alternatively, the RioLog client can
+connect through the robot address discovered from the WPILib team setting if the PC has a route to that network. Only `VMXPi.h` and `libvmxpi_hal_cpp.so` come
 from the robot. `halsim_vmx` and the Studica backend plugin are built from the `allwpilib` fork's sources as two extra
 `NativeLibrarySpec` components and uploaded with the other libraries. The parts that matter in `build.gradle`:
 
@@ -149,10 +149,10 @@ from the robot. `halsim_vmx` and the Studica backend plugin are built from the `
 plugins { id "cpp"; id "org.wpilib.GradleRIO" }
 
 deploy { targets { vmx(getTargetTypeClass('VmxPi')) {
-    username = '<ssh user>'; password = '<ssh password>'; addAddress('<host or ip>')
+    username = 'ubuntu'; password = 'password'; team = project.wpilib.getTeamNumber()
     artifacts { wpilibCpp(getArtifactTypeClass('WPILibNativeArtifact')) {
         // halsimExtensions defaults to <library dir>/libhalsim_vmx.so, which deploy uploads (it is linked below)
-        environment.put('HALSIMVMX_BACKEND', "/home/<ssh user>/wpilib/third-party/lib/libhalsim_vmx_studica.so")
+        environment.put('HALSIMVMX_BACKEND', "/home/ubuntu/wpilib/third-party/lib/libhalsim_vmx_studica.so")
         environment.put('LD_PRELOAD', '/opt/robot_manager/lib/libvmx_gpio_isr_shim.so')   // kernels without /sys/class/gpio
         environment.put('HALSIMVMX_DIO_MAP', '0:0,1:1')
     } }

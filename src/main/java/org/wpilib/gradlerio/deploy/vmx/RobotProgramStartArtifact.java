@@ -23,6 +23,14 @@ public class RobotProgramStartArtifact extends AbstractArtifact {
         String service = vmx.getServiceName();
         ctx.execute("sudo systemctl enable " + service + " 2> /dev/null");
         ctx.execute("sudo systemctl start " + service + " 2> /dev/null");
+        // Deploy completes before VS Code opens its standard RioLog view. Wait for
+        // the VMX NetConsole-compatible listener so that view can connect at once.
+        String portHex = String.format("%04X", VmxPi.RIOLOG_PORT);
+        ctx.execute("i=0; while [ \"$i\" -lt 100 ]; do "
+                + "if grep -qi ':" + portHex + " .* 0A ' /proc/net/tcp; then exit 0; fi; "
+                + "i=$((i+1)); sleep 0.1; done; "
+                + "echo 'robot_manager RioLog listener did not open TCP port " + VmxPi.RIOLOG_PORT
+                + " within 10 seconds' >&2; exit 1");
         ctx.execute("sudo sync");
     }
 }
