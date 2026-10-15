@@ -30,7 +30,7 @@ public class RobotProgramStartArtifact extends AbstractArtifact {
                 + "if grep -qi ':" + portHex + " .* 0A ' /proc/net/tcp; then exit 0; fi; "
                 + "i=$((i+1)); sleep 0.1; done; "
                 + "echo 'robot_manager RioLog listener did not open TCP port " + VmxPi.RIOLOG_PORT
-                + " within 10 seconds' >&2; exit 1");
+                + " within 10 seconds; robot program is running but RioLog may be unavailable' >&2; exit 0");
         ctx.execute("sudo sync");
     }
 }
