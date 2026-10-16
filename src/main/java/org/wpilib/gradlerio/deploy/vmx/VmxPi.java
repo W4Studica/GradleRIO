@@ -6,6 +6,9 @@ import javax.inject.Inject;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
+import org.gradle.api.tasks.TaskProvider;
+import org.gradle.language.nativeplatform.tasks.AbstractNativeCompileTask;
+import org.gradle.nativeplatform.tasks.AbstractLinkTask;
 import org.wpilib.deployutils.deploy.DeployExtension;
 import org.wpilib.deployutils.deploy.target.location.SshDeployLocation;
 import org.wpilib.gradlerio.deploy.WPILibExtension;
@@ -68,13 +71,40 @@ public class VmxPi extends WPIRemoteTarget {
         getArtifacts().add(programKillArtifact);
         getArtifacts().add(programStartArtifact);
 
-        // Copies what only the robot has (VMXPi.h, libvmxpi_hal_cpp.so) so C++ cross-builds.
-        project.getTasks().register("fetchVmxSdk" + name, FetchVmxSdkTask.class, this).configure(task -> {
+        // The VMX SDK is a deploy-time prerequisite for C++ targets. A normal build must
+        // stay local and must not contact the robot just because a VMX target is configured.
+        TaskProvider<FetchVmxSdkTask> fetchSdk = project.getTasks().register(
+                "fetchVmxSdk" + name, FetchVmxSdkTask.class, this);
+        fetchSdk.configure(task -> {
             task.getSdkDirectory().set(project.getLayout().getBuildDirectory().dir("vmxsdk" + name));
             task.getRemotePaths().convention(DEFAULT_SDK_PATHS);
             task.getPort().convention(22);
             task.getAttempts().convention(3);
             task.getRetryDelaySeconds().convention(3);
+            task.onlyIf(ignored -> project.findProperty("PrefetchVmxSdk") != null
+                    || project.findProperty("refetchVmxSdk") != null
+                    || !sdkPath("/usr/local/include/vmxpi").exists()
+                    || !sdkPath("/usr/local/lib/vmxpi/libvmxpi_hal_cpp.so").exists());
+        });
+        getArtifacts().all(artifact -> {
+            if (artifact instanceof WPILibNativeArtifact) {
+                getDeployTask().configure(task -> task.dependsOn(fetchSdk));
+            }
+        });
+
+        // When both tasks are in the deploy graph, fetch the SDK before compiling/linking.
+        // mustRunAfter does not add the fetch task to a normal build's task graph.
+        project.getTasks().withType(AbstractNativeCompileTask.class).configureEach(task -> {
+            if (task.getTargetPlatform().isPresent()
+                    && NativePlatforms.linuxarm64.equals(task.getTargetPlatform().get().getName())) {
+                task.mustRunAfter(fetchSdk);
+            }
+        });
+        project.getTasks().withType(AbstractLinkTask.class).configureEach(task -> {
+            if (task.getTargetPlatform().isPresent()
+                    && NativePlatforms.linuxarm64.equals(task.getTargetPlatform().get().getName())) {
+                task.mustRunAfter(fetchSdk);
+            }
         });
     }
 

@@ -47,14 +47,6 @@ def vmxHeaders = deploy.targets.vmx.sdkPath('/usr/local/include/vmxpi')
 def vmxHal = deploy.targets.vmx.sdkPath('/usr/local/lib/vmxpi/libvmxpi_hal_cpp.so')
 def robotLink = ['-Wl,-rpath,/usr/local/lib/vmxpi', '-Wl,-rpath-link,' + vmxHal.parent, '-Wl,--allow-shlib-undefined']
 
-// ./gradlew deploy is all it takes: building needs VMXPi.h and the VMX HAL library from the robot, so they are fetched first,
-// once (-PrefetchVmxSdk fetches again, e.g. after the robot's image changed).
-tasks.named('fetchVmxSdkvmx') {
-    onlyIf { findProperty('refetchVmxSdk') != null || !vmxHal.exists() || !vmxHeaders.exists() }
-}
-tasks.withType(AbstractNativeCompileTask).configureEach { dependsOn tasks.named('fetchVmxSdkvmx') }
-tasks.withType(AbstractLinkTask).configureEach { dependsOn tasks.named('fetchVmxSdkvmx') }
-
 def deployArtifact = deploy.targets.vmx.artifacts.wpilibCpp
 
 model {

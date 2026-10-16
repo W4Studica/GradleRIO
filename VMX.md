@@ -46,8 +46,10 @@ Directories (derived from `username`): `/home/<u>`, `/home/<u>/wpilib/classpath`
 ## Fetching what only the robot has (C++)
 
 A C++ program needs `VMXPi.h` and `libvmxpi_hal_cpp.so`. They come with the robot's OS image (the `vmx-hal` package) and cannot be
-downloaded. `./gradlew fetchVmxSdk<target>` (for a target named `vmx`: `fetchVmxSdkvmx`) copies them over the same SSH login and
-address the deploy uses (SFTP, no extra tools) into `build/vmxsdk<target>/`, keeping their paths. Everything else, including
+downloaded. `deploy` fetches them over the same SSH login and address the deploy uses (SFTP, no extra tools) into
+`build/vmxsdk<target>/`, keeping their paths. This fetch runs as part of deployment, before the C++ compile/link tasks;
+the regular `build` task does not connect to the robot or run deployment preparation. For a standalone fetch, run
+`./gradlew fetchVmxSdk<target>` (for a target named `vmx`: `fetchVmxSdkvmx`). Everything else, including
 `halsim_vmx` and its Studica backend plugin, is compiled on the PC (see `examples/vmx-cpp/`, a complete project,
 and `allwpilib/simulation/halsim_vmx/DESIGN.md`).
 
@@ -57,8 +59,8 @@ def vmxHal     = deploy.targets.vmx.sdkPath('/usr/local/lib/vmxpi/libvmxpi_hal_c
 ```
 
 `remotePaths` (default: the two paths above; directories are copied recursively) and `port` (default 22) can be set on the
-task. The server key is accepted without checking, like the deploy does. Run it once per robot image; the build itself is
-offline afterwards.
+task. The server key is accepted without checking, like the deploy does. The fetched files are reused from the local build
+directory; pass `-PrefetchVmxSdk` to fetch them again after changing the robot image.
 
 ## Finding the robot: `team`
 
@@ -195,4 +197,4 @@ model { components {
 } }
 ```
 
-Once per PC: `./gradlew installArm64Toolchain` (alone: it ends the run; it downloads the cross compiler). Then `./gradlew deploy` (it fetches the robot's VMX files the first time; `-PrefetchVmxSdk` fetches again).
+Once per PC: `./gradlew installArm64Toolchain` (alone: it ends the run; it downloads the cross compiler). Then `./gradlew deploy` (it fetches the robot's VMX files when they are not already cached; `-PrefetchVmxSdk` fetches again).
