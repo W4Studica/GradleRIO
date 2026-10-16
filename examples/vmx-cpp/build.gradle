@@ -17,8 +17,6 @@ def libDir = "/home/ubuntu/wpilib/third-party/lib"   // where deploy puts the li
 deploy {
     targets {
         vmx(getTargetTypeClass('VmxPi')) {
-            username = 'ubuntu'
-            password = 'password'
             team = wpilib.getTeamNumber()
 
             artifacts {

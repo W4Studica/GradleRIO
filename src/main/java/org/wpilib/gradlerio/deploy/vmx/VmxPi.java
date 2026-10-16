@@ -19,8 +19,7 @@ import org.wpilib.toolchain.NativePlatforms;
  * with a hardware extension (halsim_vmx), so the target platform is
  * {@link NativePlatforms#linuxarm64}, not {@link NativePlatforms#systemcore}.
  *
- * No credentials, host names or paths are assumed. Set {@code username} and
- * {@code password} first, then {@link #addAddress(String)}.
+ * The VMX-pi image uses the fixed {@code ubuntu}/{@code password} login.
  */
 public class VmxPi extends WPIRemoteTarget {
 
@@ -44,8 +43,8 @@ public class VmxPi extends WPIRemoteTarget {
         return "10." + (team / 100) + "." + (team % 100) + ".2";
     }
 
-    private String username;
-    private String password;
+    private String username = "ubuntu";
+    private String password = "password";
     private String serviceName = DEFAULT_SERVICE_NAME;
     private Integer team;
 
@@ -64,6 +63,7 @@ public class VmxPi extends WPIRemoteTarget {
         programStartArtifact = project.getObjects().newInstance(RobotProgramStartArtifact.class, "programStart" + name, this);
 
         getTargetPlatform().set(NativePlatforms.linuxarm64);
+        setDirectory("/home/ubuntu");
 
         getArtifacts().add(programKillArtifact);
         getArtifacts().add(programStartArtifact);
@@ -152,7 +152,7 @@ public class VmxPi extends WPIRemoteTarget {
     /**
      * Sets the team number and adds the two addresses the VMX has: the wired port (172.22.11.2) and its Wi-Fi access
      * point (10.TE.AM.2, 1234 gives 10.12.34.2). The deploy uses whichever one answers, so it works the same whether the
-     * computer is on the cable or on the robot's Wi-Fi. username and password must be set before this call.
+     * computer is on the cable or on the robot's Wi-Fi.
      */
     public void setTeam(int team) {
         String wifi = teamAddress(team);  // validates the number before anything is added
@@ -168,7 +168,7 @@ public class VmxPi extends WPIRemoteTarget {
     }
 
     /**
-     * Adds an SSH address (host name or IP). username and password must be set before this call.
+     * Adds an SSH address (host name or IP).
      */
     public void addAddress(String address) {
         if (username == null || password == null) {

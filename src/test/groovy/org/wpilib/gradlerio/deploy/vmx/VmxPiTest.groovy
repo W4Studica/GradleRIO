@@ -36,8 +36,6 @@ plugins {
 deploy {
     targets {
         vmx(getTargetTypeClass('VmxPi')) {
-            username = 'tester'
-            password = 'secret'
             addAddress('vmx.local')
 
             artifacts {
@@ -56,6 +54,9 @@ tasks.register('showVmx') {
         println "LIB=" + t.libraryDirectory
         println "CLASSPATH=" + t.classpathDirectory
         println "SERVICE=" + t.serviceName
+        assert t.username == 'ubuntu'
+        assert t.password == 'password'
+        assert t.directory == '/home/ubuntu'
         println "LOCATIONS=" + t.locations.names
     }
 }
@@ -66,9 +67,9 @@ tasks.register('showVmx') {
         then:
         result.task(':showVmx').outcome == SUCCESS
         result.output.contains('PLATFORM=linuxarm64')
-        result.output.contains('DIR=/home/tester')
-        result.output.contains('LIB=/home/tester/wpilib/third-party/lib')
-        result.output.contains('CLASSPATH=/home/tester/wpilib/classpath')
+        result.output.contains('DIR=/home/ubuntu')
+        result.output.contains('LIB=/home/ubuntu/wpilib/third-party/lib')
+        result.output.contains('CLASSPATH=/home/ubuntu/wpilib/classpath')
         result.output.contains('SERVICE=robot_manager')
         result.output.contains('vmx.local')
     }
@@ -102,7 +103,7 @@ deploy {
         result.output.contains('deployStagevmxProgramStart')
     }
 
-    def "addAddress before credentials is rejected with a clear message"() {
+    def "VMX defaults provide fixed credentials and allow an address without project settings"() {
         given:
         buildFile << """
 plugins {
@@ -111,23 +112,32 @@ plugins {
     id 'org.wpilib.GradleRIO'
 }
 
-deploy {
-    targets {
-        vmx(getTargetTypeClass('VmxPi')) {
-            addAddress('vmx.local')
+        deploy {
+            targets {
+                vmx(getTargetTypeClass('VmxPi')) {
+                    team = 1234
+                    addAddress('vmx.local')
+                }
+            }
         }
+
+tasks.register('verifyVmxDefaults') {
+    doLast {
+        def t = deploy.targets.vmx
+        assert t.username == 'ubuntu'
+        assert t.password == 'password'
+        assert t.directory == '/home/ubuntu'
+        assert t.locations.names.contains('10.12.34.2')
+        assert t.locations.names.contains('172.22.11.2')
+        assert t.locations.names.contains('vmx.local')
     }
 }
 """
         when:
-        def result = GradleRunner.create()
-            .withProjectDir(testProjectDir)
-            .withArguments('tasks')
-            .withPluginClasspath()
-            .buildAndFail()
+        def result = run('verifyVmxDefaults')
 
         then:
-        result.output.contains('set username and password before addAddress')
+        result.task(':verifyVmxDefaults').outcome == SUCCESS
     }
 
     def "Java artifact builds HALSIM_EXTENSIONS from absolute paths and creates vmx configurations"() {
@@ -360,7 +370,7 @@ deploy {
         result.output.contains('team number must be 1-9999')
     }
 
-    def "team needs the login first, like addAddress"() {
+    def "team uses the fixed VMX login by default"() {
         given:
         buildFile << """
 plugins {
@@ -374,14 +384,14 @@ deploy {
         vmx(getTargetTypeClass('VmxPi')) {
             team = 1234
         }
-    }
+        }
 }
 """
         when:
-        def result = GradleRunner.create().withProjectDir(testProjectDir).withArguments('tasks').withPluginClasspath().buildAndFail()
+        def result = run('tasks')
 
         then:
-        result.output.contains('set username and password before addAddress')
+        result.task(':tasks').outcome == SUCCESS
     }
 
     def "team and addAddress can be combined and a repeated team does not fail"() {

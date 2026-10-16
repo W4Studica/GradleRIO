@@ -16,8 +16,6 @@ So the target platform is `linuxarm64` (`wpi.platforms.linuxarm64`).
 deploy {
     targets {
         vmx(getTargetTypeClass('VmxPi')) {
-            username = 'ubuntu'
-            password = 'password'
             team = project.wpilib.getTeamNumber()
 
             artifacts {
@@ -66,8 +64,6 @@ offline afterwards.
 
 ```groovy
 vmx(getTargetTypeClass('VmxPi')) {
-    username = 'ubuntu'
-    password = 'password'
     team = project.wpilib.getTeamNumber()  // reads VS Code's Set Team Number setting
 }
 ```
@@ -149,7 +145,7 @@ from the robot. `halsim_vmx` and the Studica backend plugin are built from the `
 plugins { id "cpp"; id "org.wpilib.GradleRIO" }
 
 deploy { targets { vmx(getTargetTypeClass('VmxPi')) {
-    username = 'ubuntu'; password = 'password'; team = project.wpilib.getTeamNumber()
+    team = project.wpilib.getTeamNumber()
     artifacts { wpilibCpp(getArtifactTypeClass('WPILibNativeArtifact')) {
         // halsimExtensions defaults to <library dir>/libhalsim_vmx.so, which deploy uploads (it is linked below)
         environment.put('HALSIMVMX_BACKEND', "/home/ubuntu/wpilib/third-party/lib/libhalsim_vmx_studica.so")
