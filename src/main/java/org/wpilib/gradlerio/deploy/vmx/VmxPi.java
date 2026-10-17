@@ -81,8 +81,7 @@ public class VmxPi extends WPIRemoteTarget {
             task.getPort().convention(22);
             task.getAttempts().convention(3);
             task.getRetryDelaySeconds().convention(3);
-            task.onlyIf(ignored -> project.findProperty("PrefetchVmxSdk") != null
-                    || project.findProperty("refetchVmxSdk") != null
+            task.onlyIf(ignored -> project.findProperty("refetchVmxSdk") != null  // ./gradlew -PrefetchVmxSdk deploy
                     || !sdkPath("/usr/local/include/vmxpi").exists()
                     || !sdkPath("/usr/local/lib/vmxpi/libvmxpi_hal_cpp.so").exists());
         });
