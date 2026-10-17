@@ -149,4 +149,26 @@ tasks.named('fetchVmxSdkvmx') { port = ${server.port} }
         result.output.contains('127.0.0.0')
         result.output.contains('127.0.0.2')
     }
+
+    def "directory entry names from the robot must be a single path component"() {
+        when:
+        FetchVmxSdkTask.checkEntryName(name, '/usr/local/include/vmxpi')
+
+        then:
+        thrown(org.gradle.api.GradleException)
+
+        where:
+        name << ['', 'a/b', '../x', '/etc/passwd', 'a\\b', 'nul\0name']
+    }
+
+    def "ordinary names are accepted"() {
+        when:
+        FetchVmxSdkTask.checkEntryName(name, '/usr/local/include/vmxpi')
+
+        then:
+        noExceptionThrown()
+
+        where:
+        name << ['VMXPi.h', 'libvmxpi_hal_cpp.so', '.hidden', 'a..b']
+    }
 }

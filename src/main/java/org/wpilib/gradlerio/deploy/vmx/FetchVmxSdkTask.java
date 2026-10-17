@@ -145,6 +145,13 @@ public abstract class FetchVmxSdkTask extends DefaultTask {
         return found;
     }
 
+    /** A directory entry is one path component: no separators, no empty name, no NUL. */
+    static void checkEntryName(String name, String directory) {
+        if (name.isEmpty() || name.contains("/") || name.contains("\\") || name.indexOf('\0') >= 0) {
+            throw new GradleException("The robot sent an unsafe file name in " + directory + ": '" + name + "'");
+        }
+    }
+
     private void copy(SftpClient sftp, String remote, Path root) throws IOException {
         if (!remote.startsWith("/")) {
             throw new GradleException("Remote path must be absolute: " + remote);
@@ -155,7 +162,11 @@ public abstract class FetchVmxSdkTask extends DefaultTask {
         } catch (IOException e) {
             throw new GradleException("Cannot read " + remote + " on the robot: " + e.getMessage(), e);
         }
-        Path local = root.resolve(remote.substring(1));
+        Path local = root.resolve(remote.substring(1)).normalize();
+        // The robot chooses the names in a directory listing; never let one leave the SDK directory.
+        if (!local.startsWith(root.normalize())) {
+            throw new GradleException("The robot sent a path outside the SDK directory: " + remote);
+        }
         if (attrs.isDirectory()) {
             Files.createDirectories(local);
             for (SftpClient.DirEntry entry : sftp.readDir(remote)) {
@@ -163,6 +174,7 @@ public abstract class FetchVmxSdkTask extends DefaultTask {
                 if (name.equals(".") || name.equals("..")) {
                     continue;
                 }
+                checkEntryName(name, remote);
                 copy(sftp, remote.endsWith("/") ? remote + name : remote + "/" + name, root);
             }
         } else {
