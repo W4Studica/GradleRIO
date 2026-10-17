@@ -39,7 +39,7 @@ Look at the program's output on the robot: `sudo journalctl -u robot_manager -f`
 * **Titan**: `TITAN_ID`, `TITAN_MOTOR`, `TITAN_SPEED`. Leave `TITAN_ID` out for no Titan. **Take the wheels off the ground before
   the first run with a speed above 0.**
 * **Enabling the robot**: there is no Driver Station on a VMX. `main.cpp` marks the simulated Driver Station attached and enabled
-  after a second; your program decides this (that is the "MockDS"). `wpilibvmx::TitanEnableGuard` makes the Titan follow it.
+  after a second; your program decides this (that is the "MockDS"). `wpilibvmx::TitanEnableGuard` makes the Titan follow it, and `wpilibvmx::ControlLoopWatchdog` (fed once per completed cycle) also stops the Titan when this loop or the Driver Station updates stall.
 * **Studica classes**: always pass `wpilibvmx::SharedVMX()` as the `vmx` argument. Without it each class creates its own
   `VMXPi` and the SPI link breaks (measured).
 
@@ -49,4 +49,5 @@ Look at the program's output on the robot: `sudo journalctl -u robot_manager -f`
 * `libMrcLib.so` from WPILib is built for SystemCore and uses instructions a Pi 4 lacks; `robot_manager` emulates them
   (`LD_AUDIT`). Details in `GradleRIO/VMX.md`.
 * PWM, DutyCycle and I2C are not connected to WPILib's classes yet; use the Studica classes directly for those.
-* A Java program has no way to get `libhalsim_vmx.so` yet.
+* Java robot programs are not supported (C++ only).
+* The Titan watchdog deadlines in `main.cpp` (100 ms control loop, 150 ms Driver Station) are examples; the stop time on a robot has not been measured (see `HARDWARE_CHECKLIST.md` section 7).

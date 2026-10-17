@@ -1,5 +1,7 @@
 # Studica VMX-pi deploy (W4Studica fork)
 
+> **Scope: C++ only.** The project does not support Java robot programs. The Java artifacts and the "Usage (Java)" section below come from mirroring the SystemCore target; they are not tested and not a supported path. Use `examples/vmx-cpp/`.
+
 This fork adds a `VmxPi` deploy target next to `SystemCore`. All VMX code lives in
 `src/main/java/org/wpilib/gradlerio/deploy/vmx/`; upstream files are touched only to register it
 (`WPILibDeployPlugin`, one call) and to enable aarch64 cross-compilation (`WPINativeExtension`, one line).
@@ -10,7 +12,7 @@ The VMX-pi runs robot code on the **desktop (simulation) HAL** plus a hardware e
 (`halsim_vmx`). `linuxsystemcore` natives contain the real SystemCore HAL and are useless on a VMX.
 So the target platform is `linuxarm64` (`wpi.platforms.linuxarm64`).
 
-## Usage (Java)
+## Usage (Java; unsupported, kept for reference)
 
 ```groovy
 deploy {
@@ -96,24 +98,17 @@ Configuration names differ so both targets can coexist: `vmxDebug` / `vmxRelease
 ## What the VMX must provide
 
 - A `robot_manager` systemd service that runs `/home/<u>/robotCommand` **as root** (the VMX HAL uses pigpio).
-  `robotCommand` is the contract, same as 2027. The service does not exist yet (see `../robot_manager/`).
+  `robotCommand` is the contract, same as 2027. The service is provided by the Robot-Manager repository (`install.sh` installs it; it also provides RioLog, LSE emulation and the GPIO shim).
 - Passwordless `sudo` for the SSH user for `systemctl` and `ldconfig`.
 - A Java runtime at `/usr/bin/java` (see `javaCommand`).
-- `libhalsim_vmx.so` for aarch64 in the library directory. Not published anywhere yet.
+- `libhalsim_vmx.so` for aarch64 in the library directory. Built from the `allwpilib` fork (`tools/w4studica/build_vmx_runtime.py`) and shipped with the W4Studica pre-releases (`-w4.beta.N`); the VS Code extension connects those releases. Not published to the upstream Maven.
 
 ## Known risks / not done
 
-- **glibc (resolved on paper for the development robot; measured on the published library).** `libwpiHal.so` from `org.wpilib.hal:hal-cpp:2027.0.0-alpha-7:linuxarm64`
-  needs at most `GLIBC_2.34` and `GLIBCXX_3.4.31` (not the 2.41 of the toolchain), and it is the simulation HAL (460 `HALSIM_*` symbols). Ubuntu 22.04 would pass the glibc
-  check but its libstdc++ (GCC 12) lacks `GLIBCXX_3.4.31`. Other WPILib libraries were not checked, and nothing was run on the robot with them.
-- (older note, kept for context) The development VMX runs
-  Ubuntu 26.04.1 with glibc 2.43, which is newer than the toolchain's 2.41, so the published `linuxarm64` natives are expected to load.
-  Run the `ldd`/`objdump` check in `HARDWARE_CHECKLIST.md` section 5 to confirm. For an Ubuntu 22.04 VMX the original text below still applies.
-  The only published arm64 desktop toolchain is `aarch64-trixie-linux-gnu` (Debian 13, GCC 14.3;
-  OpenSDK has no older-glibc arm64 option). The Studica VMX image is documented as Ubuntu 22.04 (glibc 2.35).
-  Natives built with the trixie toolchain, including the published `linuxarm64` WPILib natives, are expected
-  not to load there (newer glibc/libstdc++ symbol versions). Unverified on hardware. This must be solved
-  (newer OS on the VMX, own sysroot, or building on the device) before this target is usable.
+- **glibc (resolved for the development robot).** `libwpiHal.so` from `org.wpilib.hal:hal-cpp:2027.0.0-alpha-7:linuxarm64` needs at most
+  `GLIBC_2.34` and `GLIBCXX_3.4.31` (the toolchain's glibc is 2.41) and is the simulation HAL (460 `HALSIM_*` symbols). The development VMX runs
+  Ubuntu 26.04.1 (glibc 2.43) and loads it. The Studica-documented Ubuntu 22.04 image passes the glibc check, but its libstdc++ (GCC 12) lacks
+  `GLIBCXX_3.4.31`, so the published natives are expected not to load there (symbol check only, not run); the project fixes the OS image to the newer Ubuntu. Other WPILib libraries were not checked for symbol versions.
 - `libhalsim_vmx.so` (no VMX headers needed) loads the Studica backend as a plugin through
   `HALSIMVMX_BACKEND=<path to libhalsim_vmx_studica.so>`. Neither library is published to Maven; a C++ project compiles both
   from the `allwpilib` fork's sources as extra components and deploys them with the other libraries (see "C++ example" below).
@@ -121,7 +116,9 @@ Configuration names differ so both targets can coexist: `vmxDebug` / `vmxRelease
 - **Titan: use `wpilibvmx::StudicaTitan` with `TitanEnableGuard`, never `studica_driver::Titan::Enable()` for switching.** `Enable()` hands
   the repetition of its CAN frame to the VMX board, which keeps sending after the program has died. MEASURED: the motor kept turning
   after `kill -9` and after `systemctl stop`. `StudicaTitan` sends single frames and the guard repeats them from the program, so the
-  Titan stops by itself (200 ms) when the program stops.
+  Titan stops by itself (200 ms) when the program stops. The guard only reads the cached enabled state; to also stop the Titan when the
+  main loop hangs or Driver Station updates stop, feed a `wpilibvmx::ControlLoopWatchdog` and pass `HalEnabled() && watchdog.IsFresh()` as the
+  guard's source (see `examples/vmx-cpp/src/main/cpp/main.cpp`; the stop time is not yet measured on a robot).
 - **`libMrcLib.so` (WPILib, binary only) kills a Pi 4 with `SIGILL`.** It is built with the SystemCore toolchain and uses ARMv8.1
   atomics, which a Cortex-A72 lacks; it is linked into a C++ program by `wpi.cpp.deps.wpilib()`. The robot's `robot_manager`
   works around it (`lse_emu`, emulates the instructions through `LD_AUDIT`; about 27 microseconds per instruction), see the
@@ -129,7 +126,7 @@ Configuration names differ so both targets can coexist: `vmxDebug` / `vmxRelease
 - The C++ artifact (`WPILibNativeArtifact`) was used with a real `NativeExecutableSpec` build and deployed to a VMX-pi
   (2026-10-11, see "C++ example"). aarch64 cross-compilation is enabled for C++ projects (needs `installArm64Toolchain` once).
 - Debug (`debug = true`) adds a JDWP agent only; no gdbserver flow.
-- Nothing here has been run against a real VMX-pi.
+- Hardware evidence comes from one development VMX-pi (2026-10-10 to 11; see `allwpilib/simulation/halsim_vmx/HARDWARE_CHECKLIST.md`). The only supported and measured project type is the C++ example (`examples/vmx-cpp`). Items added later (RioLog, release builds) have PC tests only.
 
 ## C++ example (measured on a VMX-pi, 2026-10-11)
 
