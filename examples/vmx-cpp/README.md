@@ -38,8 +38,8 @@ Look at the program's output on the robot: `sudo journalctl -u robot_manager -f`
 * **Titan**: `TITAN_ID`, `TITAN_MOTOR`, `TITAN_SPEED`. Leave `TITAN_ID` out for no Titan. **Take the wheels off the ground before
   the first run with a speed above 0.**
 * **Enabling the robot**: there is no Driver Station on a VMX. `main.cpp` marks the simulated Driver Station attached and enabled
-  after a second; your program decides this (that is the "MockDS"). `wpi::studica::TitanEnableGuard` makes the Titan follow it, and `wpi::studica::ControlLoopWatchdog` (fed once per completed cycle) also stops the Titan when this loop or the Driver Station updates stall.
-* **Studica classes**: always pass `wpi::studica::SharedVMX()` as the `vmx` argument. Without it each class creates its own
+  after a second; your program decides this (that is the "MockDS"). `wpi::studica::Titan` follows that state and owns enable keepalive and freshness checks. Feed its control heartbeat after each completed cycle and its DS heartbeat after each valid update.
+* **Low-level drivers**: include `wpi/studica/drivers/<Device>.hpp` and use `wpi::studica::drivers::<Device>`. Always pass `wpi::studica::SharedVMX()` as the `vmx` argument. Without it each class creates its own
   `VMXPi` and the SPI link breaks (measured).
 
 ## Known limits
@@ -47,6 +47,6 @@ Look at the program's output on the robot: `sudo journalctl -u robot_manager -f`
 * Verified on one VMX-pi (Raspberry Pi 4, Ubuntu 26.04, kernel 7.0).
 * `libMrcLib.so` from WPILib is built for SystemCore and uses instructions a Pi 4 lacks; `robot_manager` emulates them
   (`LD_AUDIT`). Details in `GradleRIO/VMX.md`.
-* PWM, DutyCycle and I2C are not connected to WPILib's classes yet; use the Studica classes directly for those.
+* PWM, DutyCycle, I2C and IMU quaternion paths are implemented but need hardware validation. DutyCycle uses the DIO channel map. The VMX I2C bus is connected to WPILib port 1 by default (`HALSIMSTUDICA_I2C_PORT=0|1`, or `-1` to disable).
 * Java robot programs are not supported (C++ only).
-* The Titan watchdog deadlines in `main.cpp` (100 ms control loop, 150 ms Driver Station) are examples; the stop time on a robot has not been measured.
+* The default Titan watchdog deadlines (100 ms control loop, 150 ms Driver Station) are configurable; the stop time on a robot has not been measured.

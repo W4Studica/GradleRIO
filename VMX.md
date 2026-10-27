@@ -54,9 +54,10 @@ Not ported: `FirstDsDeployLocation` / `NiDsDeployLocation` (robot discovery thro
 
 ## Things to know
 
-- **Titan: use `wpi::studica::StudicaTitan` with `TitanEnableGuard`, never `studica_driver::Titan::Enable()`.** `Enable()` lets the VMX board repeat its CAN frame, so the motor keeps turning after the program dies. The guard reads the cached enabled state only; to also stop the Titan when the main loop hangs or Driver Station updates stop, feed a `wpi::studica::ControlLoopWatchdog` (see `examples/vmx-cpp/src/main/cpp/main.cpp`).
-- **`OnboardIMU::GetQuaternion()` / `GetRotation3d()` return zeros** (the simulation HAL does not fill them). Use `wpi::math::Rotation3d{imu.GetAngleX(), imu.GetAngleY(), imu.GetYaw()}`, or the Studica `Imu` directly (not together with `HALSIMSTUDICA_IMU=1`). Create `OnboardIMU` with `FLAT`; other mount orientations are not handled.
-- **Always pass `wpi::studica::SharedVMX()` to Studica classes**; a second `VMXPi` in a process breaks the SPI link.
+- **Titan: use `wpi::studica::Titan` (`wpi/studica/Titan.hpp`).** It owns the driver, shared VMX, enable keepalive and watchdog. Feed `FeedControlLoop()` after a completed control cycle and `FeedDriverStation()` after each new valid DS update. The object starts disabled and automatically disables on stale input, HAL disable or E-stop. The low-level `wpi::studica::drivers::Titan` exposes the unchanged vendor API and does not provide this policy.
+- **`OnboardIMU::GetQuaternion()` / `GetRotation3d()` use a quaternion constructed from the corrected WPILib Euler angles.** Create `OnboardIMU` with `FLAT`; other mount orientations are not handled. The new hardware paths still need on-robot validation.
+- I2C uses one complete SDK transaction on WPILib port 1 by default; set `HALSIMSTUDICA_I2C_PORT` to `0`, `1`, or `-1` (disabled). DutyCycle uses `HALSIMSTUDICA_DIO_MAP`. Digital edge capture is opt-in through `wpi/hal/simulation/DigitalEdgeData.h`; timestamps retain the VMX hardware microsecond clock. The backend ABI is now v3: rebuild the HAL, extension and backend together.
+- **When using VMX-backed low-level `wpi::studica::drivers` classes, pass `wpi::studica::SharedVMX()`**; a second `VMXPi` in a process breaks the SPI link.
 - `libMrcLib.so` (linked by `wpi.cpp.deps.wpilib()`) uses ARMv8.1 atomics that a Pi 4 lacks; `robot_manager` emulates them through `LD_AUDIT`.
 - The published `linuxarm64` natives need glibc 2.34 and `GLIBCXX_3.4.31`; the VMX image is Ubuntu 26.04 (glibc 2.43). Ubuntu 22.04 (GCC 12 libstdc++) lacks `GLIBCXX_3.4.31` and is not used.
 - Debug (`debug = true`) adds only a JDWP agent; there is no gdbserver flow.

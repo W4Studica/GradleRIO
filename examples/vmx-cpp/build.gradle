@@ -57,7 +57,7 @@ model {
             sources.cpp {
                 source {
                     srcDir new File(studicaRoot, 'src')
-                    exclude 'StudicaBackend.cpp'
+                    exclude 'StudicaBackend.cpp', 'Titan.cpp'
                 }
                 exportedHeaders { srcDir new File(studicaRoot, 'include') }
             }
@@ -82,7 +82,7 @@ model {
                 cpp {
                     source {
                         srcDir new File(studicaRoot, 'src')
-                        include 'StudicaBackend.cpp'
+                        include 'StudicaBackend.cpp', 'DeviceConversions.cpp', 'Titan.cpp'
                     }
                     exportedHeaders {
                         srcDir new File(studicaRoot, 'include')
@@ -91,12 +91,14 @@ model {
                 studicaDrivers(CppSourceSet) {
                     source {
                         srcDir studicaDriversDir
-                        include 'analog_input.cpp', 'dio.cpp', 'encoder.cpp', 'imu.cpp'
+                        include 'analog_input.cpp', 'dio.cpp', 'encoder.cpp', 'imu.cpp', 'titan.cpp'
                     }
                 }
             }
             binaries.all {
-                cppCompiler.args '-I' + vmxHeaders.path, '-I' + studicaDriversDir.path
+                cppCompiler.args '-I' + vmxHeaders.path, '-I' + studicaDriversDir.path,
+                                 '-I' + new File(allwpilib, 'hal/src/main/native/include').path,
+                                 '-I' + new File(allwpilib, 'wpiutil/src/main/native/include').path
                 linker.args(*([vmxHal.path] + robotLink))
             }
         }
@@ -108,16 +110,6 @@ model {
             sources.cpp {
                 source { srcDir 'src/main/cpp' }
             }
-            // Studica's Titan driver, compiled in unmodified. A separate source set: include filters apply to a whole set.
-            sources {
-                titan(CppSourceSet) {
-                    source {
-                        srcDir studicaDriversDir
-                        include 'titan.cpp'
-                    }
-                }
-            }
-
             binaries.all {
                 // SharedVMX() has to be the VMXPi that halsim_studica uses (two VMXPi in one process break the SPI link),
                 // so the program links the very same plugin library.
