@@ -159,7 +159,7 @@ deploy {
             artifacts {
                 wpilibJava(getArtifactTypeClass('WPILibJavaArtifact')) {
                     halsimExtensions.add('/opt/other/libext.so')
-                    environment.put('HALSIMVMX_IMU', '1')
+                    environment.put('HALSIMSTUDICA_IMU', '1')
                 }
             }
         }
@@ -180,8 +180,8 @@ tasks.register('showJava') {
         def result = run('showJava')
 
         then:
-        result.output.contains('EXT=/home/tester/wpilib/third-party/lib/libhalsim_vmx.so:/opt/other/libext.so')
-        result.output.contains('ENV=[HALSIMVMX_IMU:1]')
+        result.output.contains('EXT=/home/tester/wpilib/third-party/lib/libhalsim_studica.so:/opt/other/libext.so')
+        result.output.contains('ENV=[HALSIMSTUDICA_IMU:1]')
         result.output.contains('HAS_RELEASE=true')
         result.output.contains('HAS_DEBUG=true')
     }
@@ -290,9 +290,9 @@ tasks.register('showGString') {
         def result = run('showGString')
 
         then:
-        result.output.contains('JEXT=/home/tester/wpilib/third-party/lib/libhalsim_vmx.so:/opt/gstring/libext.so')
+        result.output.contains('JEXT=/home/tester/wpilib/third-party/lib/libhalsim_studica.so:/opt/gstring/libext.so')
         result.output.contains('JENV=A="/opt/gstring/value" ')
-        result.output.contains('CEXT=/home/tester/wpilib/third-party/lib/libhalsim_vmx.so:/opt/gstring/libext.so')
+        result.output.contains('CEXT=/home/tester/wpilib/third-party/lib/libhalsim_studica.so:/opt/gstring/libext.so')
         result.output.contains('CENV=B="/opt/gstring/value" ')
     }
 

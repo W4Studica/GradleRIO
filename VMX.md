@@ -2,9 +2,9 @@
 
 This fork adds a `VmxPi` deploy target next to `SystemCore`, for **C++ robot programs** (Java is not supported). All VMX code is in `src/main/java/org/wpilib/gradlerio/deploy/vmx/`; upstream files are touched only to register it (`WPILibDeployPlugin`, one call) and to enable aarch64 cross-compilation (`WPINativeExtension`, one line).
 
-A VMX-pi runs robot code on the **desktop (simulation) HAL** plus a hardware extension (`halsim_vmx`), so the target platform is `linuxarm64`, not `linuxsystemcore` (those natives contain the real SystemCore HAL).
+A VMX-pi runs robot code on the **desktop (simulation) HAL** plus a hardware extension (`halsim_studica`), so the target platform is `linuxarm64`, not `linuxsystemcore` (those natives contain the real SystemCore HAL).
 
-Start from `examples/vmx-cpp/` (complete project and steps). Normally the W4Studica VS Code extension installs the pre-release bundles and switches a project to this target; the example builds `halsim_vmx` from the `allwpilib` sources instead.
+Start from `examples/vmx-cpp/` (complete project and steps). Normally the W4Studica VS Code extension installs the pre-release bundles and switches a project to this target; the example builds `halsim_studica` from the `allwpilib` sources instead.
 
 ## Deploying
 
@@ -50,14 +50,14 @@ Not ported: `FirstDsDeployLocation` / `NiDsDeployLocation` (robot discovery thro
 
 - The `robot_manager` service, which runs `robotCommand` **as root** (the VMX HAL uses pigpio), plus the GPIO shim and LSE emulation it sets up (all from `install.sh` in Robot-Manager).
 - Passwordless `sudo` for the SSH user for `systemctl` (`stop`, `start`, `enable robot_manager`) and `ldconfig` (`install.sh --sudoers`).
-- `libhalsim_vmx.so` and its Studica backend in the library directory. They are built from the `allwpilib` fork (`tools/w4studica/build_vmx_runtime.py`) and shipped with the W4Studica pre-releases, or compiled by the project as in the example. They are not published to Maven.
+- `libhalsim_studica.so` and its Studica backend in the library directory. They are built from the `allwpilib` fork (`tools/w4studica/build_vmx_runtime.py`) and shipped with the W4Studica pre-releases, or compiled by the project as in the example. They are not published to Maven.
 
 ## Things to know
 
-- **Titan: use `wpilibvmx::StudicaTitan` with `TitanEnableGuard`, never `studica_driver::Titan::Enable()`.** `Enable()` lets the VMX board repeat its CAN frame, so the motor keeps turning after the program dies. The guard reads the cached enabled state only; to also stop the Titan when the main loop hangs or Driver Station updates stop, feed a `wpilibvmx::ControlLoopWatchdog` (see `examples/vmx-cpp/src/main/cpp/main.cpp`).
-- **`OnboardIMU::GetQuaternion()` / `GetRotation3d()` return zeros** (the simulation HAL does not fill them). Use `wpi::math::Rotation3d{imu.GetAngleX(), imu.GetAngleY(), imu.GetYaw()}`, or the Studica `Imu` directly (not together with `HALSIMVMX_IMU=1`). Create `OnboardIMU` with `FLAT`; other mount orientations are not handled.
-- **Always pass `wpilibvmx::SharedVMX()` to Studica classes**; a second `VMXPi` in a process breaks the SPI link.
+- **Titan: use `wpi::studica::StudicaTitan` with `TitanEnableGuard`, never `studica_driver::Titan::Enable()`.** `Enable()` lets the VMX board repeat its CAN frame, so the motor keeps turning after the program dies. The guard reads the cached enabled state only; to also stop the Titan when the main loop hangs or Driver Station updates stop, feed a `wpi::studica::ControlLoopWatchdog` (see `examples/vmx-cpp/src/main/cpp/main.cpp`).
+- **`OnboardIMU::GetQuaternion()` / `GetRotation3d()` return zeros** (the simulation HAL does not fill them). Use `wpi::math::Rotation3d{imu.GetAngleX(), imu.GetAngleY(), imu.GetYaw()}`, or the Studica `Imu` directly (not together with `HALSIMSTUDICA_IMU=1`). Create `OnboardIMU` with `FLAT`; other mount orientations are not handled.
+- **Always pass `wpi::studica::SharedVMX()` to Studica classes**; a second `VMXPi` in a process breaks the SPI link.
 - `libMrcLib.so` (linked by `wpi.cpp.deps.wpilib()`) uses ARMv8.1 atomics that a Pi 4 lacks; `robot_manager` emulates them through `LD_AUDIT`.
 - The published `linuxarm64` natives need glibc 2.34 and `GLIBCXX_3.4.31`; the VMX image is Ubuntu 26.04 (glibc 2.43). Ubuntu 22.04 (GCC 12 libstdc++) lacks `GLIBCXX_3.4.31` and is not used.
 - Debug (`debug = true`) adds only a JDWP agent; there is no gdbserver flow.
-- Hardware evidence comes from one development VMX-pi: see `allwpilib/simulation/halsim_vmx/HARDWARE_CHECKLIST.md`.
+- Hardware evidence comes from one development VMX-pi.

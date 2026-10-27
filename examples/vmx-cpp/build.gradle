@@ -8,10 +8,11 @@ plugins {
 
 // ---- the robot ----------------------------------------------------------------------------------------------------
 // Connect as ubuntu/password. The WPILib team number selects the VMX Wi-Fi address; GradleRIO also tries its wired address.
-// The allwpilib fork with halsim_vmx and studica_drivers; the default is the folder next to GradleRIO.
+// The allwpilib fork with halsim_studica and studica_drivers; the default is the folder next to GradleRIO.
 def allwpilib = file(findProperty('allwpilibDir') ?: '../../../allwpilib')
-def halsimVmx = new File(allwpilib, 'simulation/halsim_vmx')
-def studicaDriversDir = new File(allwpilib, 'studica_drivers')
+def halsimStudica = new File(allwpilib, 'simulation/halsim_studica')
+def studicaRoot = new File(allwpilib, 'studica')
+def studicaDriversDir = new File(studicaRoot, 'drivers')
 def libDir = "/home/ubuntu/wpilib/third-party/lib"   // where deploy puts the libraries
 
 deploy {
@@ -21,16 +22,16 @@ deploy {
 
             artifacts {
                 wpilibCpp(getArtifactTypeClass('WPILibNativeArtifact')) {
-                    // halsimExtensions defaults to <library dir>/libhalsim_vmx.so, which is built and deployed below.
-                    environment.put('HALSIMVMX_BACKEND', libDir + '/libhalsim_vmx_studica.so')
+                    // halsimExtensions defaults to <library dir>/libhalsim_studica.so, which is built and deployed below.
+                    environment.put('HALSIMSTUDICA_BACKEND', libDir + '/libstudica_hardware.so')
                     // The kernel of the VMX image has no /sys/class/gpio; this makes the HAL's GPIO interrupts work.
                     // Installed on the robot by Robot-Manager's install.sh.
                     environment.put('LD_PRELOAD', '/opt/robot_manager/lib/libvmx_gpio_isr_shim.so')
 
-                    // WPILib channel -> VMX channel. See allwpilib/simulation/halsim_vmx/DESIGN.md (section 4).
-                    environment.put('HALSIMVMX_DIO_MAP', '0:0,1:1')     // DigitalInput/Output/Encoder 0 and 1
-                    environment.put('HALSIMVMX_ANALOG_MAP', '0:22')     // AnalogInput 0 -> AnalogIn 22
-                    environment.put('HALSIMVMX_IMU', '1')               // OnboardIMU from the navX
+                    // WPILib channel -> VMX channel.
+                    environment.put('HALSIMSTUDICA_DIO_MAP', '0:0,1:1')     // DigitalInput/Output/Encoder 0 and 1
+                    environment.put('HALSIMSTUDICA_ANALOG_MAP', '0:22')     // AnalogInput 0 -> AnalogIn 22
+                    environment.put('HALSIMSTUDICA_IMU', '1')               // OnboardIMU from the navX
 
                     // Read by src/main/cpp/main.cpp. Leave TITAN_ID out if there is no Titan.
                     environment.put('TITAN_ID', '42')
@@ -51,25 +52,40 @@ def deployArtifact = deploy.targets.vmx.artifacts.wpilibCpp
 
 model {
     components {
-        // The HAL extension that connects WPILib's DIO/Analog/Encoder/IMU to the VMX. No VMX headers needed.
-        halsim_vmx(NativeLibrarySpec) {
+        studica(NativeLibrarySpec) {
             targetPlatform wpi.platforms.linuxarm64
             sources.cpp {
-                source { srcDir new File(halsimVmx, 'src/main/native/cpp') }
-                exportedHeaders { srcDir new File(halsimVmx, 'src/main/native/include') }
+                source {
+                    srcDir new File(studicaRoot, 'src')
+                    exclude 'StudicaBackend.cpp'
+                }
+                exportedHeaders { srcDir new File(studicaRoot, 'include') }
             }
+            binaries.all { linker.args '-ldl', '-lpthread' }
+        }
+
+        // The HAL extension that connects WPILib's DIO/Analog/Encoder/IMU to the VMX. No VMX headers needed.
+        halsim_studica(NativeLibrarySpec) {
+            targetPlatform wpi.platforms.linuxarm64
+            sources.cpp {
+                source { srcDir new File(halsimStudica, 'src/main/native/cpp') }
+                exportedHeaders { srcDir new File(halsimStudica, 'src/main/native/include') }
+            }
+            binaries.all { lib library: 'studica', linkage: 'shared' }
             wpi.cpp.deps.useLibrary(it, 'hal_shared', 'wpiutil_shared')
         }
 
-        // The Studica backend plugin for halsim_vmx (the Studica drivers, unmodified).
-        halsim_vmx_studica(NativeLibrarySpec) {
+        // The Studica backend plugin for halsim_studica (the Studica drivers, unmodified).
+        studica_hardware(NativeLibrarySpec) {
             targetPlatform wpi.platforms.linuxarm64
             sources {
                 cpp {
-                    source { srcDir new File(halsimVmx, 'src/studica/native/cpp') }
+                    source {
+                        srcDir new File(studicaRoot, 'src')
+                        include 'StudicaBackend.cpp'
+                    }
                     exportedHeaders {
-                        srcDir new File(halsimVmx, 'src/studica/native/include')
-                        srcDir new File(halsimVmx, 'src/main/native/include')
+                        srcDir new File(studicaRoot, 'include')
                     }
                 }
                 studicaDrivers(CppSourceSet) {
@@ -103,14 +119,15 @@ model {
             }
 
             binaries.all {
-                // SharedVMX() has to be the VMXPi that halsim_vmx uses (two VMXPi in one process break the SPI link),
+                // SharedVMX() has to be the VMXPi that halsim_studica uses (two VMXPi in one process break the SPI link),
                 // so the program links the very same plugin library.
-                lib library: 'halsim_vmx_studica', linkage: 'shared'
+                lib library: 'studica_hardware', linkage: 'shared'
+                lib library: 'studica', linkage: 'shared'
                 // Linking the extension too makes deploy upload it; the HAL loads it by path (HALSIM_EXTENSIONS).
-                lib library: 'halsim_vmx', linkage: 'shared'
+                lib library: 'halsim_studica', linkage: 'shared'
                 cppCompiler.args '-I' + vmxHeaders.path, '-I' + studicaDriversDir.path,
-                                 '-I' + new File(halsimVmx, 'src/main/native/include').path,
-                                 '-I' + new File(halsimVmx, 'src/studica/native/include').path
+                                 '-I' + new File(halsimStudica, 'src/main/native/include').path,
+                                 '-I' + new File(studicaRoot, 'include').path
                 linker.args(*([vmxHal.path] + robotLink))
             }
 

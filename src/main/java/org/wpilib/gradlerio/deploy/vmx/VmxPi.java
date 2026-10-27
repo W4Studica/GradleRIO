@@ -19,7 +19,7 @@ import org.wpilib.toolchain.NativePlatforms;
  * Studica VMX-pi (Raspberry Pi, Linux aarch64).
  *
  * Unlike SystemCore, the VMX-pi runs robot code on the desktop (simulation) HAL
- * with a hardware extension (halsim_vmx), so the target platform is
+ * with a hardware extension (halsim_studica), so the target platform is
  * {@link NativePlatforms#linuxarm64}, not {@link NativePlatforms#systemcore}.
  *
  * The VMX-pi image uses the fixed {@code ubuntu}/{@code password} login.
@@ -109,7 +109,7 @@ public class VmxPi extends WPIRemoteTarget {
 
     /**
      * What only the robot has and a C++ build needs: the VMX headers and the VMX HAL library, both from the OS image.
-     * The halsim_vmx extension and its Studica backend plugin are compiled on the PC, not copied from the robot.
+     * The halsim_studica extension and its Studica backend plugin are compiled on the PC, not copied from the robot.
      */
     public static final java.util.List<String> DEFAULT_SDK_PATHS = java.util.List.of(
             "/usr/local/include/vmxpi",

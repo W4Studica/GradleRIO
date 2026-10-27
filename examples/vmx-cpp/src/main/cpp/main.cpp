@@ -1,12 +1,12 @@
 // A hardware check for a VMX-pi, written with WPILib's standard classes: AnalogInput, Encoder and OnboardIMU read the sensors
-// through halsim_vmx, and (if TITAN_ID is set) a Titan motor controller is enabled and driven by the Driver Station state.
+// through halsim_studica, and (if TITAN_ID is set) a Titan motor controller is enabled and driven by the Driver Station state.
 //
 // There is no real Driver Station on a VMX, so this program plays the part of the "MockDS" itself: it marks the simulated
 // Driver Station attached and enabled one second after start. Your own program decides when the robot is enabled; the
-// Titan follows that through wpilibvmx::TitanEnableGuard, and stops when the robot is disabled or E-stopped.
+// Titan follows that through wpi::studica::TitanEnableGuard, and stops when the robot is disabled or E-stopped.
 //
 // The guard also stops the Titan when this program stops running its control loop or stops receiving Driver Station
-// updates: wpilibvmx::ControlLoopWatchdog is fed after every completed cycle and after every new Driver Station packet,
+// updates: wpi::studica::ControlLoopWatchdog is fed after every completed cycle and after every new Driver Station packet,
 // and the guard treats the robot as disabled when either heartbeat is late. Without it the guard only reads the cached
 // enabled state, so a stalled main loop would leave the Titan enabled. Feed it from the real sources, never from a timer.
 //
@@ -18,10 +18,10 @@
 
 #include "titan.hpp"
 #include "wpi/framework/TimedRobot.hpp"
-#include "wpi/halsim/vmx/ControlLoopWatchdog.hpp"
-#include "wpi/halsim/vmx/SharedVMX.hpp"
-#include "wpi/halsim/vmx/StudicaTitan.hpp"
-#include "wpi/halsim/vmx/TitanEnableGuard.hpp"
+#include "wpi/studica/ControlLoopWatchdog.hpp"
+#include "wpi/studica/SharedVMX.hpp"
+#include "wpi/studica/StudicaTitan.hpp"
+#include "wpi/studica/TitanEnableGuard.hpp"
 #include "wpi/hardware/discrete/AnalogInput.hpp"
 #include "wpi/hardware/imu/OnboardIMU.hpp"
 #include "wpi/hardware/rotation/Encoder.hpp"
@@ -50,11 +50,11 @@ class Robot : public wpi::TimedRobot {
       m_motor = static_cast<uint8_t>(EnvDouble("TITAN_MOTOR", 0));
       m_speed = EnvDouble("TITAN_SPEED", 0);
       // Always give the Studica classes the shared VMXPi: a second VMXPi in the process breaks the SPI link.
-      m_titan = std::make_unique<studica_driver::Titan>(id, 15600, 0.0006830601f, wpilibvmx::SharedVMX());
-      m_switch = std::make_unique<wpilibvmx::StudicaTitan>(*m_titan, id);
+      m_titan = std::make_unique<studica_driver::Titan>(id, 15600, 0.0006830601f, wpi::studica::SharedVMX());
+      m_switch = std::make_unique<wpi::studica::StudicaTitan>(*m_titan, id);
       // Deadlines are examples: choose them for your control period and Driver Station update rate, then measure the stop time.
       using namespace std::chrono_literals;
-      m_watchdog = std::make_unique<wpilibvmx::ControlLoopWatchdog>(100ms, 150ms);
+      m_watchdog = std::make_unique<wpi::studica::ControlLoopWatchdog>(100ms, 150ms);
       m_guard = std::make_unique<Guard>(*m_switch, [this] { return Guard::HalEnabled() && m_watchdog->IsFresh(); });
       m_guard->Start();
       std::printf("Titan %d on motor %d, speed %.2f\n", id, m_motor, m_speed);
@@ -92,11 +92,11 @@ class Robot : public wpi::TimedRobot {
   wpi::AnalogInput m_analog{0};
   wpi::Encoder m_encoder{0, 1};
   wpi::OnboardIMU m_imu{wpi::OnboardIMU::FLAT};
-  using Guard = wpilibvmx::TitanEnableGuard<wpilibvmx::StudicaTitan>;
+  using Guard = wpi::studica::TitanEnableGuard<wpi::studica::StudicaTitan>;
   // Declared in this order so the guard is destroyed (and disables the Titan) before the Titan and the watchdog it reads.
-  std::unique_ptr<wpilibvmx::ControlLoopWatchdog> m_watchdog;
+  std::unique_ptr<wpi::studica::ControlLoopWatchdog> m_watchdog;
   std::unique_ptr<studica_driver::Titan> m_titan;
-  std::unique_ptr<wpilibvmx::StudicaTitan> m_switch;
+  std::unique_ptr<wpi::studica::StudicaTitan> m_switch;
   std::unique_ptr<Guard> m_guard;
 };
 
