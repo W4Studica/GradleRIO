@@ -57,7 +57,7 @@ model {
             sources.cpp {
                 source {
                     srcDir new File(studicaRoot, 'src')
-                    exclude 'StudicaBackend.cpp', 'Titan.cpp'
+                    exclude 'hardware/**', 'titan/**'
                 }
                 exportedHeaders { srcDir new File(studicaRoot, 'include') }
             }
@@ -82,7 +82,7 @@ model {
                 cpp {
                     source {
                         srcDir new File(studicaRoot, 'src')
-                        include 'StudicaBackend.cpp', 'DeviceConversions.cpp', 'Titan.cpp'
+                        include 'hardware/*.cpp', 'conversion/*.cpp', 'titan/*.cpp'
                     }
                     exportedHeaders {
                         srcDir new File(studicaRoot, 'include')
