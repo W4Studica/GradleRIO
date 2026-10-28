@@ -159,7 +159,7 @@ deploy {
             artifacts {
                 wpilibJava(getArtifactTypeClass('WPILibJavaArtifact')) {
                     halsimExtensions.add('/opt/other/libext.so')
-                    environment.put('HALSIMSTUDICA_IMU', '1')
+                    environment.put('ROBOT_TEST_OPTION', '1')
                 }
             }
         }
@@ -181,7 +181,7 @@ tasks.register('showJava') {
 
         then:
         result.output.contains('EXT=/home/tester/wpilib/third-party/lib/libhalsim_studica.so:/opt/other/libext.so')
-        result.output.contains('ENV=[HALSIMSTUDICA_IMU:1]')
+        result.output.contains('ENV=[ROBOT_TEST_OPTION:1]')
         result.output.contains('HAS_RELEASE=true')
         result.output.contains('HAS_DEBUG=true')
     }

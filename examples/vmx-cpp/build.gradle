@@ -13,7 +13,6 @@ def allwpilib = file(findProperty('allwpilibDir') ?: '../../../allwpilib')
 def halsimStudica = new File(allwpilib, 'simulation/halsim_studica')
 def studicaRoot = new File(allwpilib, 'studica')
 def studicaDriversDir = new File(studicaRoot, 'drivers')
-def libDir = "/home/ubuntu/wpilib/third-party/lib"   // where deploy puts the libraries
 
 deploy {
     targets {
@@ -22,21 +21,8 @@ deploy {
 
             artifacts {
                 wpilibCpp(getArtifactTypeClass('WPILibNativeArtifact')) {
-                    // halsimExtensions defaults to <library dir>/libhalsim_studica.so, which is built and deployed below.
-                    environment.put('HALSIMSTUDICA_BACKEND', libDir + '/libstudica_hardware.so')
-                    // The kernel of the VMX image has no /sys/class/gpio; this makes the HAL's GPIO interrupts work.
-                    // Installed on the robot by Robot-Manager's install.sh.
-                    environment.put('LD_PRELOAD', '/opt/robot_manager/lib/libvmx_gpio_isr_shim.so')
+                    // The VMX runtime configures its hardware automatically.
 
-                    // WPILib channel -> VMX channel.
-                    environment.put('HALSIMSTUDICA_DIO_MAP', '0:0,1:1')     // DigitalInput/Output/Encoder 0 and 1
-                    environment.put('HALSIMSTUDICA_ANALOG_MAP', '0:22')     // AnalogInput 0 -> AnalogIn 22
-                    environment.put('HALSIMSTUDICA_IMU', '1')               // OnboardIMU from the navX
-
-                    // Read by src/main/cpp/main.cpp. Leave TITAN_ID out if there is no Titan.
-                    environment.put('TITAN_ID', '42')
-                    environment.put('TITAN_MOTOR', '0')
-                    environment.put('TITAN_SPEED', '0')                 // 0..1; keep 0 until the wheels are off the ground
                 }
             }
         }
@@ -61,7 +47,10 @@ model {
                 }
                 exportedHeaders { srcDir new File(studicaRoot, 'include') }
             }
-            binaries.all { linker.args '-ldl', '-lpthread' }
+            binaries.all {
+                cppCompiler.args '-DWPI_STUDICA_HARDWARE'
+                linker.args '-ldl', '-lpthread', '-Wl,-rpath,$ORIGIN'
+            }
         }
 
         // The HAL extension that connects WPILib's DIO/Analog/Encoder/IMU to the VMX. No VMX headers needed.

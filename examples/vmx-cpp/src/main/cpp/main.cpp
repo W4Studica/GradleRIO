@@ -1,5 +1,5 @@
 // A hardware check for a VMX-pi, written with WPILib's standard classes: AnalogInput, Encoder and OnboardIMU read the sensors
-// through halsim_studica, and (if TITAN_ID is set) a Titan motor controller is enabled and driven by the Driver Station state.
+// through halsim_studica, and (if kTitanId is set) a Titan motor controller is enabled and driven by the Driver Station state.
 //
 // There is no real Driver Station on a VMX, so this program plays the part of the "MockDS" itself: it marks the simulated
 // Driver Station attached and enabled one second after start. Your own program decides when the robot is enabled; the
@@ -8,10 +8,9 @@
 // wpi::studica::Titan owns enable keepalive and freshness checks. FeedControlLoop() follows a completed cycle;
 // FeedDriverStation() follows a new valid Driver Station state. This example generates that state locally.
 //
-// Environment (build.gradle puts it into robotCommand): TITAN_ID (omit: no Titan), TITAN_MOTOR (0-3), TITAN_SPEED (0..1).
 #include <cstdio>
 #include <chrono>
-#include <cstdlib>
+#include <optional>
 #include <memory>
 
 #include "wpi/framework/TimedRobot.hpp"
@@ -22,27 +21,24 @@
 #include "wpi/simulation/DriverStationSim.hpp"
 
 namespace {
-const char* Env(const char* name) {
-  const char* v = std::getenv(name);
-  return (v && *v) ? v : nullptr;
-}
-double EnvDouble(const char* name, double fallback) {
-  const char* v = Env(name);
-  return v ? std::atof(v) : fallback;
-}
+// Change these constants for the connected controller; no process environment is needed.
+constexpr std::optional<uint8_t> kTitanId = std::nullopt;
+constexpr uint8_t kTitanMotor = 0;
+constexpr double kTitanSpeed = 0.0;
 }  // namespace
 
 class Robot : public wpi::TimedRobot {
  public:
   Robot() {
     wpi::sim::DriverStationSim::SetDsAttached(true);
+    wpi::sim::DriverStationSim::SetRobotMode(wpi::hal::RobotMode::TELEOPERATED);
     wpi::sim::DriverStationSim::SetEnabled(false);
     wpi::sim::DriverStationSim::NotifyNewData();
 
-    if (Env("TITAN_ID")) {
-      const auto id = static_cast<uint8_t>(EnvDouble("TITAN_ID", 0));
-      m_motor = static_cast<uint8_t>(EnvDouble("TITAN_MOTOR", 0));
-      m_speed = EnvDouble("TITAN_SPEED", 0);
+    if (kTitanId) {
+      const auto id = *kTitanId;
+      m_motor = kTitanMotor;
+      m_speed = kTitanSpeed;
       m_titan = std::make_unique<wpi::studica::Titan>(id, 15600, 0.0006830601f);
       std::printf("Titan %d on motor %d, speed %.2f\n", id, m_motor, m_speed);
     }

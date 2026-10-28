@@ -16,6 +16,7 @@ What runs where:
    installs the GPIO shim and the LSE emulation this example relies on.
 2. **PC layout**: this folder lives in the `GradleRIO` checkout, and the `allwpilib` fork is next to `GradleRIO`
    (`W4Studica/allwpilib`, `W4Studica/GradleRIO`). Another place: `-PallwpilibDir=/path/to/allwpilib`.
+   This source-build example also requires matching W4Studica Maven libraries; upstream-only WPILib lacks the fork HAL hooks. Use the VS Code extension for the normal prebuilt-release workflow.
 3. **PC, once**: `./gradlew installArm64Toolchain` (downloads the `aarch64-trixie` cross compiler, about 400 MB).
 4. **Robot address**: set the team number in VS Code with "Set Team Number". GradleRIO reads it from
    `.wpilib/wpilib_preferences.json` and tries the wired port (`172.22.11.2`) and the matching Wi-Fi access point
@@ -33,9 +34,9 @@ Look at the program's output on the robot: `sudo journalctl -u robot_manager -f`
 
 ## Adapt it
 
-* **Wiring**: `build.gradle` maps WPILib channels to VMX channels (`HALSIMSTUDICA_DIO_MAP`, `HALSIMSTUDICA_ANALOG_MAP`). VMX channels include FlexDIO 0-11, encoder pairs (0,1) (2,3) ... A even, B odd,
+* **Wiring**: DIO/PWM use VMX channel numbers directly; AnalogInput 0–3 maps to VMX 22–25. VMX channels include FlexDIO 0-11, encoder pairs (0,1) (2,3) ... A even, B odd,
   and AnalogIn 22-25.
-* **Titan**: `TITAN_ID`, `TITAN_MOTOR`, `TITAN_SPEED`. Leave `TITAN_ID` out for no Titan. **Take the wheels off the ground before
+* **Titan**: Set `kTitanId`, `kTitanMotor` and `kTitanSpeed` in the C++ source. Leave `kTitanId` empty for no Titan. **Take the wheels off the ground before
   the first run with a speed above 0.**
 * **Enabling the robot**: there is no Driver Station on a VMX. `main.cpp` marks the simulated Driver Station attached and enabled
   after a second; your program decides this (that is the "MockDS"). `wpi::studica::Titan` follows that state and owns enable keepalive and freshness checks. Feed its control heartbeat after each completed cycle and its DS heartbeat after each valid update.
@@ -47,6 +48,6 @@ Look at the program's output on the robot: `sudo journalctl -u robot_manager -f`
 * Verified on one VMX-pi (Raspberry Pi 4, Ubuntu 26.04, kernel 7.0).
 * `libMrcLib.so` from WPILib is built for SystemCore and uses instructions a Pi 4 lacks; `robot_manager` emulates them
   (`LD_AUDIT`). Details in `GradleRIO/VMX.md`.
-* PWM, DutyCycle, I2C and IMU quaternion paths are implemented but need hardware validation. DutyCycle uses the DIO channel map. The VMX I2C bus is connected to WPILib port 1 by default (`HALSIMSTUDICA_I2C_PORT=0|1`, or `-1` to disable).
+* PWM, DutyCycle, I2C and IMU quaternion paths are implemented but need hardware validation. DutyCycle uses the DIO channel number directly. The VMX I2C bus is connected to WPILib port 1 by default without an environment override.
 * Java robot programs are not supported (C++ only).
 * The default Titan watchdog deadlines (100 ms control loop, 150 ms Driver Station) are configurable; the stop time on a robot has not been measured.
