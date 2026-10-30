@@ -20,7 +20,7 @@ What runs where:
 3. **PC, once**: `./gradlew installArm64Toolchain` (downloads the `aarch64-trixie` cross compiler, about 400 MB).
 4. **Robot address**: set the team number in VS Code with "Set Team Number". GradleRIO reads it from
    `.wpilib/wpilib_preferences.json` and tries the wired port (`172.22.11.2`) and the matching Wi-Fi access point
-   (`10.TE.AM.2`; team 1234 gives `10.12.34.2`), using whichever answers. The SSH login is fixed to `ubuntu` / `password`.
+   (`10.TE.AM.2`; team 1234 gives `10.12.34.2`), using whichever answers. The SSH login is fixed to `lvuser` / `password`.
 5. **PC**: nothing to do: `./gradlew deploy` fetches `VMXPi.h` and `libvmxpi_hal_cpp.so` from the robot the first time (`-PrefetchVmxSdk` fetches again, e.g. after a new robot image).
 
 ## Build and deploy

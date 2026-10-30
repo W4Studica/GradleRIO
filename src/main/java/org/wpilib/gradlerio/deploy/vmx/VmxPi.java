@@ -22,7 +22,9 @@ import org.wpilib.toolchain.NativePlatforms;
  * with a hardware extension (halsim_studica), so the target platform is
  * {@link NativePlatforms#linuxarm64}, not {@link NativePlatforms#systemcore}.
  *
- * The VMX-pi image uses the fixed {@code ubuntu}/{@code password} login.
+ * Robot-Manager creates the fixed accounts: {@code lvuser}/{@code password} owns the robot
+ * files under {@code /home/lvuser} and is the deploy login; {@code admin}/{@code password} is
+ * the interactive SSH account.
  */
 public class VmxPi extends WPIRemoteTarget {
 
@@ -46,7 +48,7 @@ public class VmxPi extends WPIRemoteTarget {
         return "10." + (team / 100) + "." + (team % 100) + ".2";
     }
 
-    private String username = "ubuntu";
+    private String username = "lvuser";
     private String password = "password";
     private String serviceName = DEFAULT_SERVICE_NAME;
     private Integer team;
@@ -66,7 +68,7 @@ public class VmxPi extends WPIRemoteTarget {
         programStartArtifact = project.getObjects().newInstance(RobotProgramStartArtifact.class, "programStart" + name, this);
 
         getTargetPlatform().set(NativePlatforms.linuxarm64);
-        setDirectory("/home/ubuntu");
+        setDirectory("/home/lvuser");
 
         getArtifacts().add(programKillArtifact);
         getArtifacts().add(programStartArtifact);

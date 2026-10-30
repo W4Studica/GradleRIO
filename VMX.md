@@ -8,7 +8,7 @@ Start from `examples/vmx-cpp/` (complete project and steps). Normally the W4Stud
 
 ## Deploying
 
-`./gradlew deploy` cross-compiles on the PC, uploads the program and its libraries to `/home/<username>/wpilib/third-party/lib`, writes `robotCommand` (and `robotCommand.args`) under `/home/<username>`, and restarts the `robot_manager` service (`serviceName`, default `robot_manager`; the Robot-Manager repository installs it). Once per PC: `./gradlew installArm64Toolchain` (run alone: it ends the run).
+`./gradlew deploy` cross-compiles on the PC, uploads the program and its libraries to `/home/lvuser/wpilib/third-party/lib`, writes `robotCommand` (and `robotCommand.args`) under `/home/lvuser`, and restarts the `robot_manager` service (`serviceName`, default `robot_manager`; the unit also answers to `robot` and the Robot-Manager repository installs it). Once per PC: `./gradlew installArm64Toolchain` (run alone: it ends the run).
 
 The program's stdout and stderr go to the systemd journal and, in WPILib NetConsole framing, to TCP port 1741, so VS Code's RioLog works (`robot.local` is published through Avahi, or use the team address).
 
@@ -20,7 +20,7 @@ vmx(getTargetTypeClass('VmxPi')) {
 }
 ```
 
-`team` adds both addresses the VMX has: the wired port, always `172.22.11.2`, and its own Wi-Fi network at `10.TE.AM.2` (1234 gives `10.12.34.2`). The deploy uses whichever answers. The login is the fixed `ubuntu` / `password`; the example reads `VMX_USER`, `VMX_PASSWORD` and `VMX_HOST` to override it. The SSH server key is accepted without checking.
+`team` adds both addresses the VMX has: the wired port, always `172.22.11.2`, and its own Wi-Fi network at `10.TE.AM.2` (1234 gives `10.12.34.2`). The deploy uses whichever answers. The login is fixed to `lvuser` / `password` (`install.sh` creates `lvuser` for deploys and robot files, and `admin` for interactive SSH); `setUsername`/`setPassword` change it when a robot was set up differently. The SSH server key is accepted without checking.
 
 ## Fetching what only the robot has
 
@@ -48,8 +48,8 @@ Not ported: `FirstDsDeployLocation` / `NiDsDeployLocation` (robot discovery thro
 
 ## What the VMX must provide
 
-- The `robot_manager` service, which runs `robotCommand` **as root** (the VMX HAL uses pigpio), plus the GPIO shim and LSE emulation it sets up (all from `install.sh` in Robot-Manager).
-- Passwordless `sudo` for the SSH user for `systemctl` (`stop`, `start`, `enable robot_manager`) and `ldconfig` (`install.sh --sudoers`).
+- The `robot_manager` service, which runs `robotCommand` **as root** (the VMX HAL uses pigpio), plus the GPIO shim and LSE emulation it sets up (all from `install.sh` in Robot-Manager). It also creates the `lvuser` deploy account (home `/home/lvuser`) and the `admin` SSH account.
+- Passwordless `sudo` for deploy commands (`systemctl` `stop`/`start`/`enable robot_manager`, `ldconfig`); `install.sh --sudoers` also gives `admin` and `lvuser` full passwordless `sudo`.
 - `libhalsim_studica.so` and its Studica backend in the library directory. They are built from the `allwpilib` fork (`tools/w4studica/build_vmx_runtime.py`) and shipped with the W4Studica pre-releases, or compiled by the project as in the example. They are not published to Maven.
 
 ## Things to know

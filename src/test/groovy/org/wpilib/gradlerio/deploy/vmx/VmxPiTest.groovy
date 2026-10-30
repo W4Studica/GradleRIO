@@ -54,9 +54,9 @@ tasks.register('showVmx') {
         println "LIB=" + t.libraryDirectory
         println "CLASSPATH=" + t.classpathDirectory
         println "SERVICE=" + t.serviceName
-        assert t.username == 'ubuntu'
+        assert t.username == 'lvuser'
         assert t.password == 'password'
-        assert t.directory == '/home/ubuntu'
+        assert t.directory == '/home/lvuser'
         println "LOCATIONS=" + t.locations.names
     }
 }
@@ -67,9 +67,9 @@ tasks.register('showVmx') {
         then:
         result.task(':showVmx').outcome == SUCCESS
         result.output.contains('PLATFORM=linuxarm64')
-        result.output.contains('DIR=/home/ubuntu')
-        result.output.contains('LIB=/home/ubuntu/wpilib/third-party/lib')
-        result.output.contains('CLASSPATH=/home/ubuntu/wpilib/classpath')
+        result.output.contains('DIR=/home/lvuser')
+        result.output.contains('LIB=/home/lvuser/wpilib/third-party/lib')
+        result.output.contains('CLASSPATH=/home/lvuser/wpilib/classpath')
         result.output.contains('SERVICE=robot_manager')
         result.output.contains('vmx.local')
     }
@@ -124,9 +124,9 @@ plugins {
 tasks.register('verifyVmxDefaults') {
     doLast {
         def t = deploy.targets.vmx
-        assert t.username == 'ubuntu'
+        assert t.username == 'lvuser'
         assert t.password == 'password'
-        assert t.directory == '/home/ubuntu'
+        assert t.directory == '/home/lvuser'
         assert t.locations.names.contains('10.12.34.2')
         assert t.locations.names.contains('172.22.11.2')
         assert t.locations.names.contains('vmx.local')
