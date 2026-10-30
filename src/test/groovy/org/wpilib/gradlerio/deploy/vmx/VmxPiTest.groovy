@@ -180,7 +180,7 @@ tasks.register('showJava') {
         def result = run('showJava')
 
         then:
-        result.output.contains('EXT=/home/tester/wpilib/third-party/lib/libhalsim_studica.so:/opt/other/libext.so')
+        result.output.contains('EXT=/home/tester/wpilib/third-party/lib/libhalsim_studica.so:/home/tester/wpilib/third-party/lib/libhalsim_ds_relay.so:/opt/other/libext.so')
         result.output.contains('ENV=[ROBOT_TEST_OPTION:1]')
         result.output.contains('HAS_RELEASE=true')
         result.output.contains('HAS_DEBUG=true')
@@ -290,9 +290,9 @@ tasks.register('showGString') {
         def result = run('showGString')
 
         then:
-        result.output.contains('JEXT=/home/tester/wpilib/third-party/lib/libhalsim_studica.so:/opt/gstring/libext.so')
+        result.output.contains('JEXT=/home/tester/wpilib/third-party/lib/libhalsim_studica.so:/home/tester/wpilib/third-party/lib/libhalsim_ds_relay.so:/opt/gstring/libext.so')
         result.output.contains('JENV=A="/opt/gstring/value" ')
-        result.output.contains('CEXT=/home/tester/wpilib/third-party/lib/libhalsim_studica.so:/opt/gstring/libext.so')
+        result.output.contains('CEXT=/home/tester/wpilib/third-party/lib/libhalsim_studica.so:/home/tester/wpilib/third-party/lib/libhalsim_ds_relay.so:/opt/gstring/libext.so')
         result.output.contains('CENV=B="/opt/gstring/value" ')
     }
 

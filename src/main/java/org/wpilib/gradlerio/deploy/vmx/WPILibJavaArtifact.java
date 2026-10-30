@@ -34,7 +34,7 @@ public class WPILibJavaArtifact extends DebuggableJavaArtifact {
     private final List<String> jvmArgs = new ArrayList<>();
     private final List<String> arguments = new ArrayList<>();
     /** Extension libraries, relative to the library directory unless absolute. */
-    private final List<String> halsimExtensions = new ArrayList<>(List.of("libhalsim_studica.so"));
+    private final List<String> halsimExtensions = new ArrayList<>(List.of("libhalsim_studica.so", "libhalsim_ds_relay.so"));
     /** Extra application environment variables for the robot program. */
     private final Map<String, String> environment = new LinkedHashMap<>();
 

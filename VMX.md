@@ -22,6 +22,17 @@ vmx(getTargetTypeClass('VmxPi')) {
 
 `team` adds both addresses the VMX has: the wired port, always `172.22.11.2`, and its own Wi-Fi network at `10.TE.AM.2` (1234 gives `10.12.34.2`). The deploy uses whichever answers. The login is fixed to `lvuser` / `password` (`install.sh` creates `lvuser` for deploys and robot files, and `admin` for interactive SSH); `setUsername`/`setPassword` change it when a robot was set up differently. The SSH server key is accepted without checking.
 
+## Driving the robot from a Driver Station
+
+Robot-Manager's `mrccomm.service` owns the Driver Station sockets and forwards the decoded state
+(enable/disable, mode, E-stop, joysticks) over loopback to the robot program, where the
+`libhalsim_ds_relay.so` extension applies it to the simulation HAL and returns the battery voltage.
+Both extensions are enabled by default (`libhalsim_studica.so` plus `libhalsim_ds_relay.so`), so a
+real (or simulated) Driver Station on the robot's network can enable the program and move the
+joints exactly as on SystemCore. Joystick decoding follows the documented Driver Station packet
+layout; it still needs a check against a real Driver Station. Game data, match time and alliance
+station are not relayed yet.
+
 ## Fetching what only the robot has
 
 A C++ program needs `VMXPi.h` and `libvmxpi_hal_cpp.so` from the robot's OS image (`vmx-hal`); they cannot be downloaded. `deploy` fetches them over SFTP, with the same login and addresses, into `build/vmxsdk<target>/` before the C++ tasks run. The regular `build` never contacts the robot. Standalone: `./gradlew fetchVmxSdk<target>` (for a target named `vmx`: `fetchVmxSdkvmx`).

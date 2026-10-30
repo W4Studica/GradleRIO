@@ -65,6 +65,16 @@ model {
             wpi.cpp.deps.useLibrary(it, 'hal_shared', 'wpiutil_shared')
         }
 
+        // Relays Driver Station state (from Robot-Manager's mrccomm) into the simulation HAL.
+        halsim_ds_relay(NativeLibrarySpec) {
+            targetPlatform wpi.platforms.linuxarm64
+            sources.cpp {
+                source { srcDir new File(allwpilib, 'simulation/halsim_ds_relay/src/main/native/cpp') }
+                exportedHeaders { srcDir new File(allwpilib, 'simulation/halsim_ds_relay/src/main/native/include') }
+            }
+            wpi.cpp.deps.useLibrary(it, 'hal_shared', 'wpiutil_shared')
+        }
+
         // The Studica backend plugin for halsim_studica (the Studica drivers, unmodified).
         studica_hardware(NativeLibrarySpec) {
             targetPlatform wpi.platforms.linuxarm64
@@ -105,8 +115,9 @@ model {
                 // so the program links the very same plugin library.
                 lib library: 'studica_hardware', linkage: 'shared'
                 lib library: 'studica', linkage: 'shared'
-                // Linking the extension too makes deploy upload it; the HAL loads it by path (HALSIM_EXTENSIONS).
+                // Linking the extensions too makes deploy upload them; the HAL loads them by path (HALSIM_EXTENSIONS).
                 lib library: 'halsim_studica', linkage: 'shared'
+                lib library: 'halsim_ds_relay', linkage: 'shared'
                 cppCompiler.args '-I' + vmxHeaders.path, '-I' + studicaDriversDir.path,
                                  '-I' + new File(halsimStudica, 'src/main/native/include').path,
                                  '-I' + new File(studicaRoot, 'include').path
